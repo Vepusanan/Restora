@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "748415104475",
+    "project_id": "restora-12ae9",
+    "storage_bucket": "restora-12ae9.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:748415104475:android:4f2c16073694f5efeae3fe",
+        "android_client_info": {
+          "package_name": "com.restora.app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyD2fynZiuAUZjARWQNhnlo1qFnZ2qOjwFw"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
