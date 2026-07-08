@@ -1,7 +1,14 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { Platform } from 'react-native';
 import { FirebaseApp, getApp, getApps, initializeApp } from 'firebase/app';
-import { Auth, getAuth, initializeAuth, type Persistence } from 'firebase/auth';
-import { Firestore, getFirestore } from 'firebase/firestore';
+import {
+  Auth,
+  browserLocalPersistence,
+  getAuth,
+  getReactNativePersistence,
+  initializeAuth,
+} from 'firebase/auth';
+import { getFirestore } from 'firebase/firestore';
 
 import { env } from '@/src/config/env';
 
@@ -15,16 +22,17 @@ function createFirebaseApp(): FirebaseApp {
   return initializeApp(firebaseConfig);
 }
 
-function getReactNativePersistence(storage: typeof AsyncStorage): Persistence {
-  const { getReactNativePersistence: getPersistence } =
-    require('@firebase/auth/dist/rn/index.js') as {
-      getReactNativePersistence: (value: typeof AsyncStorage) => Persistence;
-    };
-
-  return getPersistence(storage);
-}
-
 function createFirebaseAuth(app: FirebaseApp): Auth {
+  if (Platform.OS === 'web') {
+    try {
+      return initializeAuth(app, {
+        persistence: browserLocalPersistence,
+      });
+    } catch {
+      return getAuth(app);
+    }
+  }
+
   try {
     return initializeAuth(app, {
       persistence: getReactNativePersistence(AsyncStorage),
