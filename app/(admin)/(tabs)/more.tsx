@@ -13,6 +13,12 @@ type HubItem = {
 
 const ITEMS: HubItem[] = [
   {
+    title: 'Usage',
+    subtitle: 'Kitchen consumption history and log usage',
+    icon: 'restaurant-outline',
+    href: '/(admin)/(tabs)/usage',
+  },
+  {
     title: 'Inbox',
     subtitle: 'Expiry alerts and system messages',
     icon: 'mail-outline',
@@ -26,7 +32,7 @@ const ITEMS: HubItem[] = [
   },
   {
     title: 'AI Assistant',
-    subtitle: 'Ask about inventory and waste',
+    subtitle: 'Ask about inventory, usage, and waste',
     icon: 'sparkles-outline',
     href: '/(admin)/(tabs)/ai',
   },

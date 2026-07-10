@@ -2,6 +2,7 @@ import type {
   FinancialContext,
   InventoryContextItem,
   RestaurantAiContext,
+  UsageContextItem,
   UserProfile,
   UserRole,
   WasteContextItem,
@@ -35,6 +36,16 @@ type RawWaste = {
   date: string;
 };
 
+type RawUsage = {
+  ingredientName: string;
+  quantityUsed: number;
+  unit: string;
+  category: string;
+  consumptionCost: number;
+  voided: boolean;
+  date: string;
+};
+
 /**
  * FR-045 — strip financial fields for staff before any Gemini call.
  * Do not rely on prompt instructions alone.
@@ -43,15 +54,22 @@ export function filterContextForRole(
   role: UserRole,
   inventory: InventoryContextItem[],
   waste: WasteContextItem[],
+  usage: UsageContextItem[],
   financial: FinancialContext | null,
-): { inventory: InventoryContextItem[]; waste: WasteContextItem[]; financial: FinancialContext | null } {
+): {
+  inventory: InventoryContextItem[];
+  waste: WasteContextItem[];
+  usage: UsageContextItem[];
+  financial: FinancialContext | null;
+} {
   if (role === 'admin') {
-    return { inventory, waste, financial };
+    return { inventory, waste, usage, financial };
   }
 
   return {
     inventory: inventory.map(({ unitCost: _ignored, ...rest }) => rest),
     waste: waste.map(({ costLoss: _ignored, ...rest }) => rest),
+    usage: usage.map(({ consumptionCost: _ignored, ...rest }) => rest),
     financial: null,
   };
 }
@@ -60,6 +78,7 @@ export function buildRestaurantContext(input: {
   profile: UserProfile;
   batches: RawBatch[];
   wasteLogs: RawWaste[];
+  usageLogs?: RawUsage[];
   now?: Date;
 }): RestaurantAiContext {
   const now = input.now ?? new Date();
@@ -89,6 +108,16 @@ export function buildRestaurantContext(input: {
     costLoss: log.costLoss,
   }));
 
+  const activeUsage = (input.usageLogs ?? []).filter((log) => !log.voided);
+  const usage: UsageContextItem[] = activeUsage.slice(0, 80).map((log) => ({
+    ingredientName: log.ingredientName,
+    quantityUsed: log.quantityUsed,
+    unit: log.unit,
+    category: log.category,
+    date: log.date,
+    consumptionCost: log.consumptionCost,
+  }));
+
   let inventoryValue = 0;
   for (const batch of input.batches) {
     if (batch.archived || batch.consumed) continue;
@@ -99,12 +128,23 @@ export function buildRestaurantContext(input: {
   }
 
   const wasteLossTotal = activeWaste.reduce((sum, log) => sum + (log.costLoss || 0), 0);
+  const consumptionCostTotal = activeUsage.reduce(
+    (sum, log) => sum + (log.consumptionCost || 0),
+    0,
+  );
   const financial: FinancialContext = {
     inventoryValue: Math.round(inventoryValue * 100) / 100,
     wasteLossTotal: Math.round(wasteLossTotal * 100) / 100,
+    consumptionCostTotal: Math.round(consumptionCostTotal * 100) / 100,
   };
 
-  const filtered = filterContextForRole(input.profile.role, inventory, waste, financial);
+  const filtered = filterContextForRole(
+    input.profile.role,
+    inventory,
+    waste,
+    usage,
+    financial,
+  );
   const notes: string[] = [];
   if (input.profile.role === 'staff') {
     notes.push(
@@ -113,8 +153,10 @@ export function buildRestaurantContext(input: {
   } else {
     notes.push('User is admin. Financial summaries are included.');
   }
+  notes.push(
+    'Consumption (usage) is kitchen use for orders/prep — not waste. Keep waste and consumption metrics separate.',
+  );
 
-  // Keep context compact for token cost.
   const compactInventory = filtered.inventory
     .filter((item) => item.status === 'active' || item.status === 'expired')
     .slice(0, 60);
@@ -126,6 +168,7 @@ export function buildRestaurantContext(input: {
     asOf: now.toISOString(),
     inventory: compactInventory,
     waste: filtered.waste.slice(0, 60),
+    usage: filtered.usage.slice(0, 60),
     financial: filtered.financial,
     notes,
   };
@@ -150,7 +193,7 @@ export function staffFinancialRefusal(query: string): string | null {
   ];
   if (!moneyHints.some((hint) => lower.includes(hint))) return null;
   return (
-    'I can help with operational inventory and waste quantities, but cost and financial information ' +
+    'I can help with operational inventory, usage, and waste quantities, but cost and financial information ' +
     'is restricted to restaurant admins. Please ask your admin for monetary reports.'
   );
 }

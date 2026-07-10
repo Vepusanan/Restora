@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useInventory } from '@hooks/useInventory';
 import { useWasteLogs } from '@hooks/useWasteLogs';
+import { useConsumptionLogs } from '@hooks/useConsumptionLogs';
 import { useAuth } from '@hooks/useAuth';
 import { canAccessModule } from '@utils/rbac';
 import {
@@ -9,18 +10,20 @@ import {
   calculateWasteLoss,
   defaultFinancialRange,
 } from '@utils/financial';
+import { calculateConsumptionCostTotal } from '@utils/consumption';
 import { ingredientKey } from '@utils/expiry';
 import type { FinancialDateRange, WasteReason } from '@/types';
 
 /**
  * Admin financial dashboard (FR-032–FR-035).
- * Computes from realtime inventory + waste snapshots — no Blaze/Functions required.
+ * Computes from realtime inventory + waste + usage snapshots.
  */
 export function useFinancialDashboard(restaurantId: string | undefined) {
   const { profile } = useAuth();
   const allowed = canAccessModule(profile?.role, 'financial');
   const inventory = useInventory(allowed ? restaurantId : undefined);
   const waste = useWasteLogs(allowed ? restaurantId : undefined);
+  const usage = useConsumptionLogs(allowed ? restaurantId : undefined);
 
   const [ingredientRange, setIngredientRange] = useState<FinancialDateRange>(() =>
     defaultFinancialRange(),
@@ -40,11 +43,17 @@ export function useFinancialDashboard(restaurantId: string | undefined) {
 
   const ingredientCost = useMemo(
     () =>
-      calculateIngredientCost(inventory.batches, waste.logs, ingredientRange, {
-        ingredientKey: ingredientName ? ingredientKey(ingredientName) : null,
-        supplier,
-      }),
-    [inventory.batches, waste.logs, ingredientRange, ingredientName, supplier],
+      calculateIngredientCost(
+        inventory.batches,
+        waste.logs,
+        ingredientRange,
+        {
+          ingredientKey: ingredientName ? ingredientKey(ingredientName) : null,
+          supplier,
+        },
+        usage.logs,
+      ),
+    [inventory.batches, waste.logs, usage.logs, ingredientRange, ingredientName, supplier],
   );
 
   const wasteLoss = useMemo(
@@ -54,6 +63,11 @@ export function useFinancialDashboard(restaurantId: string | undefined) {
         ingredientKey: wasteIngredient ? ingredientKey(wasteIngredient) : null,
       }),
     [waste.logs, wasteRange, wasteReason, wasteIngredient],
+  );
+
+  const consumptionCost = useMemo(
+    () => calculateConsumptionCostTotal(usage.logs, wasteRange),
+    [usage.logs, wasteRange],
   );
 
   const ingredientOptions = useMemo(() => {
@@ -72,10 +86,11 @@ export function useFinancialDashboard(restaurantId: string | undefined) {
 
   return {
     allowed,
-    loading: allowed ? inventory.loading || waste.loading : false,
+    loading: allowed ? inventory.loading || waste.loading || usage.loading : false,
     valuation,
     ingredientCost,
     wasteLoss,
+    consumptionCost,
     ingredientRange,
     setIngredientRange,
     wasteRange,

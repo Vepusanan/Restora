@@ -5,6 +5,7 @@ import type {
   FinancialDateRange,
   IngredientCostShare,
   InventoryBatch,
+  InventoryUsageLog,
   TopWastedIngredient,
   WasteLog,
   WasteTrendPoint,
@@ -123,8 +124,9 @@ export function buildIngredientCostBreakdown(
   batches: InventoryBatch[],
   wasteLogs: WasteLog[],
   range: FinancialDateRange,
+  usageLogs: InventoryUsageLog[] = [],
 ): IngredientCostShare[] {
-  const result = calculateIngredientCost(batches, wasteLogs, range);
+  const result = calculateIngredientCost(batches, wasteLogs, range, undefined, usageLogs);
   return result.rows.map((row) => ({
     ingredientName: row.ingredientName,
     ingredientKey: row.ingredientKey,

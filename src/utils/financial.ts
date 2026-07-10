@@ -4,6 +4,7 @@ import type {
   IngredientCostResult,
   IngredientCostRow,
   InventoryBatch,
+  InventoryUsageLog,
   InventoryValuationResult,
   WasteLog,
   WasteLossResult,
@@ -78,13 +79,20 @@ export function calculateInventoryValuation(
 }
 
 /**
- * Reconstruct received quantity for purchase-cost reporting after waste deductions.
+ * Reconstruct received quantity for purchase-cost reporting after waste/usage deductions.
  */
-export function getReceivedQuantity(batch: InventoryBatch, wasteLogs: WasteLog[]): number {
+export function getReceivedQuantity(
+  batch: InventoryBatch,
+  wasteLogs: WasteLog[],
+  usageLogs: InventoryUsageLog[] = [],
+): number {
   const wasted = wasteLogs
     .filter((log) => log.batchId === batch.id && !log.voided)
     .reduce((sum, log) => sum + log.quantityWasted, 0);
-  return batch.quantity + wasted;
+  const used = usageLogs
+    .filter((log) => log.batchId === batch.id && !log.voided)
+    .reduce((sum, log) => sum + log.quantityUsed, 0);
+  return batch.quantity + wasted + used;
 }
 
 /**
@@ -98,6 +106,7 @@ export function calculateIngredientCost(
     ingredientKey?: string | null;
     supplier?: string | null;
   },
+  usageLogs: InventoryUsageLog[] = [],
 ): IngredientCostResult {
   const ingredientFilter = filters?.ingredientKey?.trim().toLowerCase() || null;
   const supplierFilter = filters?.supplier?.trim().toLowerCase() || null;
@@ -110,7 +119,7 @@ export function calculateIngredientCost(
     if (ingredientFilter && batch.ingredientKey !== ingredientFilter) continue;
     if (supplierFilter && batch.supplier.trim().toLowerCase() !== supplierFilter) continue;
 
-    const qty = getReceivedQuantity(batch, wasteLogs);
+    const qty = getReceivedQuantity(batch, wasteLogs, usageLogs);
     if (!Number.isFinite(qty) || qty <= 0) continue;
     if (!Number.isFinite(batch.unitCost) || batch.unitCost < 0) continue;
 

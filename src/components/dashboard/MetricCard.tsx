@@ -25,7 +25,7 @@ const TONE_ICON = {
   success: colors.success,
 } as const;
 
-/** 2×2 dashboard metric tile. */
+/** Dashboard metric tile — icon + copy share one left edge. */
 export function MetricCard({
   label,
   value,
@@ -45,22 +45,26 @@ export function MetricCard({
         pressed && onPress ? styles.pressed : null,
       ]}
     >
-      <View style={styles.top}>
+      <View style={styles.content}>
         <View style={[styles.iconWrap, { backgroundColor: colors.limeSoft }]}>
           <Icon name={icon} size={18} color={TONE_ICON[tone]} />
         </View>
+        <View style={styles.copy}>
+          <Text style={styles.value} numberOfLines={1}>
+            {value}
+          </Text>
+          <Text style={styles.label} numberOfLines={1}>
+            {label}
+          </Text>
+          {hint ? (
+            <Text style={styles.hint} numberOfLines={1}>
+              {hint}
+            </Text>
+          ) : (
+            <View style={styles.hintSpacer} />
+          )}
+        </View>
       </View>
-      <Text style={styles.value} numberOfLines={1}>
-        {value}
-      </Text>
-      <Text style={styles.label} numberOfLines={1}>
-        {label}
-      </Text>
-      {hint ? (
-        <Text style={styles.hint} numberOfLines={1}>
-          {hint}
-        </Text>
-      ) : null}
     </Pressable>
   );
 }
@@ -124,8 +128,11 @@ export function PeriodPills({ value, onChange }: PeriodPillsProps) {
 
 const styles = StyleSheet.create({
   card: {
-    flex: 1,
-    minWidth: '45%',
+    // Keep a strict 2-column grid even when the last row has one card.
+    flexGrow: 1,
+    flexBasis: '47%',
+    maxWidth: '48.5%',
+    minWidth: 0,
     borderRadius: radius.lg,
     padding: spacing.md,
     borderWidth: 1,
@@ -133,30 +140,57 @@ const styles = StyleSheet.create({
     ...elevation.e1,
   },
   pressed: { opacity: 0.9, transform: [{ scale: 0.98 }] },
-  top: { marginBottom: spacing.sm },
+  content: {
+    alignItems: 'flex-start',
+    gap: spacing.sm,
+    minHeight: 108,
+  },
   iconWrap: {
     width: 36,
     height: 36,
     borderRadius: 18,
     alignItems: 'center',
     justifyContent: 'center',
+    marginLeft: 0,
+  },
+  copy: {
+    alignSelf: 'stretch',
+    alignItems: 'flex-start',
+    gap: 2,
   },
   value: {
+    margin: 0,
+    padding: 0,
     fontSize: 22,
     fontWeight: '800',
     color: colors.text,
     letterSpacing: -0.3,
+    textAlign: 'left',
+    includeFontPadding: false,
   },
   label: {
-    marginTop: 2,
+    margin: 0,
+    padding: 0,
     fontSize: 13,
     fontWeight: '600',
     color: colors.textSecondary,
+    textAlign: 'left',
+    includeFontPadding: false,
   },
   hint: {
-    marginTop: 4,
+    margin: 0,
+    marginTop: 2,
+    padding: 0,
     fontSize: 11,
+    lineHeight: 14,
     color: colors.textSecondary,
+    textAlign: 'left',
+    includeFontPadding: false,
+  },
+  /** Reserves hint-line height so cards with/without hints share the same bottom padding. */
+  hintSpacer: {
+    marginTop: 2,
+    height: 14,
   },
   action: {
     width: 76,

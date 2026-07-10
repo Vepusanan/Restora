@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.voidWasteEntry = exports.createWasteLog = exports.sendRestaurantNotification = exports.cleanupInvalidFCMTokens = exports.evaluateInventoryExpiry = exports.deactivateStaff = exports.askAiAssistant = exports.generateContent = void 0;
+exports.voidUsageEntry = exports.createUsageLog = exports.voidWasteEntry = exports.createWasteLog = exports.sendRestaurantNotification = exports.cleanupInvalidFCMTokens = exports.evaluateInventoryExpiry = exports.deactivateStaff = exports.askAiAssistant = exports.generateContent = void 0;
 const app_1 = require("firebase-admin/app");
 const v2_1 = require("firebase-functions/v2");
 (0, app_1.initializeApp)();
@@ -21,4 +21,8 @@ var createWasteLog_1 = require("./waste/createWasteLog");
 Object.defineProperty(exports, "createWasteLog", { enumerable: true, get: function () { return createWasteLog_1.createWasteLog; } });
 var voidWasteEntry_1 = require("./waste/voidWasteEntry");
 Object.defineProperty(exports, "voidWasteEntry", { enumerable: true, get: function () { return voidWasteEntry_1.voidWasteEntry; } });
+var createUsageLog_1 = require("./consumption/createUsageLog");
+Object.defineProperty(exports, "createUsageLog", { enumerable: true, get: function () { return createUsageLog_1.createUsageLog; } });
+var voidUsageEntry_1 = require("./consumption/voidUsageEntry");
+Object.defineProperty(exports, "voidUsageEntry", { enumerable: true, get: function () { return voidUsageEntry_1.voidUsageEntry; } });
 //# sourceMappingURL=index.js.map

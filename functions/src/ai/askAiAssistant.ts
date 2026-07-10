@@ -77,9 +77,10 @@ export const askAiAssistant = onCall(
       }
     }
 
-    const [batchesSnap, wasteSnap] = await Promise.all([
+    const [batchesSnap, wasteSnap, usageSnap] = await Promise.all([
       db.collection('inventoryBatches').where('restaurantId', '==', restaurantId).limit(100).get(),
       db.collection('wasteLogs').where('restaurantId', '==', restaurantId).limit(100).get(),
+      db.collection('inventory_usage').where('restaurantId', '==', restaurantId).limit(100).get(),
     ]);
 
     const inventory = batchesSnap.docs.map((doc) => {
@@ -111,16 +112,35 @@ export const askAiAssistant = onCall(
         return item;
       });
 
+    const usage = usageSnap.docs
+      .map((doc) => doc.data())
+      .filter((data) => !data.voided)
+      .map((data) => {
+        const item: Record<string, unknown> = {
+          ingredientName: data.ingredientName,
+          quantityUsed: data.quantityUsed,
+          unit: data.unit,
+          category: data.category,
+          date: data.usedAt?.toDate?.()?.toISOString?.()?.slice(0, 10) ?? '',
+        };
+        if (role === 'admin') item.consumptionCost = data.consumptionCost;
+        return item;
+      });
+
     const context = {
       restaurantId,
       restaurantName: user.restaurantName,
       role,
       inventory,
       waste,
+      usage,
+      notes: [
+        'Consumption is kitchen usage for orders/prep — not waste. Keep metrics separate.',
+      ],
       financial:
         role === 'admin'
           ? {
-              note: 'Compute valuation and waste loss from provided inventory/waste rows only.',
+              note: 'Compute valuation, waste loss, and consumption cost from provided rows only.',
             }
           : null,
     };
@@ -131,7 +151,7 @@ export const askAiAssistant = onCall(
       const model = genAI.getGenerativeModel({
         model: geminiConfig.defaultModel,
         systemInstruction:
-          'Answer only from restaurantContext. Read-only. Never invent data. Staff must not receive financial answers.',
+          'Answer only from restaurantContext. Read-only. Never invent data. Staff must not receive financial answers. Treat waste and consumption as separate processes.',
       });
       const result = await model.generateContent(
         JSON.stringify({ userQuery: query, role, restaurantContext: context }),

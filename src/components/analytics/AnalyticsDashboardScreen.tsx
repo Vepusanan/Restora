@@ -10,6 +10,7 @@ import {
 } from 'react-native';
 import { AiInsightsPanel } from '@components/analytics/AiInsightsPanel';
 import { AnalyticsSummaryCards } from '@components/analytics/AnalyticsSummaryCards';
+import { ConsumptionAnalyticsPanel } from '@components/analytics/ConsumptionAnalyticsPanel';
 import { TopWastedTable } from '@components/analytics/TopWastedTable';
 import { WasteTrendChart } from '@components/analytics/WasteTrendChart';
 import { CostBreakdownChart } from '@components/financial/CostBreakdownChart';
@@ -61,6 +62,11 @@ export function AnalyticsDashboardScreen() {
     wasteTrends,
     totalWasteCost,
     topWasted,
+    consumptionTrends,
+    totalConsumptionCost,
+    topConsumed,
+    consumptionByCategory,
+    inventoryTurnover,
     ingredientBreakdown,
     totalIngredientCost,
     lastUpdated,
@@ -107,8 +113,9 @@ export function AnalyticsDashboardScreen() {
     <ScrollView style={styles.screen} contentContainerStyle={styles.content}>
       <Text style={styles.title}>Analytics</Text>
       <Text style={styles.subtitle}>
-        Live waste, cost, and inventory insights for {profile?.restaurantName ?? 'your restaurant'}.
-        Updates automatically when inventory or waste changes.
+        Live waste, consumption, cost, and inventory insights for{' '}
+        {profile?.restaurantName ?? 'your restaurant'}. Updates automatically when inventory,
+        waste, or usage changes.
       </Text>
 
       <InlineError message={error || undefined} />
@@ -116,7 +123,7 @@ export function AnalyticsDashboardScreen() {
       <DateRangeFields range={range} onChange={setRange} />
 
       <SelectField
-        label="Waste trend aggregation"
+        label="Trend aggregation"
         value={period}
         options={PERIOD_OPTIONS}
         onChange={setPeriod}
@@ -128,6 +135,7 @@ export function AnalyticsDashboardScreen() {
         cards={[
           { label: 'Inventory value', value: valuation.totalValue, tone: 'primary' },
           { label: 'Waste cost', value: totalWasteCost, tone: 'danger' },
+          { label: 'Consumption cost', value: totalConsumptionCost, tone: 'primary' },
           { label: 'Ingredient cost', value: totalIngredientCost },
         ]}
       />
@@ -154,6 +162,15 @@ export function AnalyticsDashboardScreen() {
       <WasteTrendChart
         title={`Waste cost trend (${period})`}
         points={wasteTrends}
+      />
+
+      <ConsumptionAnalyticsPanel
+        currency={currency}
+        totalConsumptionCost={totalConsumptionCost}
+        trends={consumptionTrends}
+        topConsumed={topConsumed}
+        byCategory={consumptionByCategory}
+        turnover={inventoryTurnover}
       />
 
       <View style={styles.section}>

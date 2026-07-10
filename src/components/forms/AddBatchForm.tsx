@@ -8,6 +8,7 @@ import { SelectField } from '@components/ui/SelectField';
 import { InlineError } from '@components/ui/InlineError';
 import { INVENTORY_UNITS } from '@constants/inventory';
 import { toDateOnlyString } from '@utils/expiry';
+import { formatNumberInput, parseNumberInput } from '@utils/numberInput';
 import {
   createBatchSchema,
   editBatchSchema,
@@ -101,8 +102,8 @@ function CreateBatchForm({ submitting, error, onSubmit }: CreateProps) {
         render={({ field: { onChange, onBlur, value } }) => (
           <Input
             label="Quantity"
-            value={value === undefined || value === null ? '' : String(value)}
-            onChangeText={(text) => onChange(text === '' ? Number.NaN : Number(text))}
+            value={formatNumberInput(value)}
+            onChangeText={(text) => onChange(parseNumberInput(text))}
             onBlur={onBlur}
             keyboardType="decimal-pad"
             error={errors.quantity?.message}
@@ -130,8 +131,8 @@ function CreateBatchForm({ submitting, error, onSubmit }: CreateProps) {
         render={({ field: { onChange, onBlur, value } }) => (
           <Input
             label="Unit cost"
-            value={value === undefined || value === null ? '' : String(value)}
-            onChangeText={(text) => onChange(text === '' ? Number.NaN : Number(text))}
+            value={formatNumberInput(value)}
+            onChangeText={(text) => onChange(parseNumberInput(text))}
             onBlur={onBlur}
             keyboardType="decimal-pad"
             error={errors.unitCost?.message}
@@ -225,8 +226,8 @@ function EditBatchForm({ batch, submitting, error, onSubmit }: EditProps) {
         render={({ field: { onChange, onBlur, value } }) => (
           <Input
             label="Quantity"
-            value={value === undefined || value === null ? '' : String(value)}
-            onChangeText={(text) => onChange(text === '' ? Number.NaN : Number(text))}
+            value={formatNumberInput(value)}
+            onChangeText={(text) => onChange(parseNumberInput(text))}
             onBlur={onBlur}
             keyboardType="decimal-pad"
             error={errors.quantity?.message}

@@ -62,9 +62,10 @@ exports.askAiAssistant = (0, https_1.onCall)({
             };
         }
     }
-    const [batchesSnap, wasteSnap] = await Promise.all([
+    const [batchesSnap, wasteSnap, usageSnap] = await Promise.all([
         db.collection('inventoryBatches').where('restaurantId', '==', restaurantId).limit(100).get(),
         db.collection('wasteLogs').where('restaurantId', '==', restaurantId).limit(100).get(),
+        db.collection('inventory_usage').where('restaurantId', '==', restaurantId).limit(100).get(),
     ]);
     const inventory = batchesSnap.docs.map((doc) => {
         const data = doc.data();
@@ -95,15 +96,34 @@ exports.askAiAssistant = (0, https_1.onCall)({
             item.costLoss = data.costLoss;
         return item;
     });
+    const usage = usageSnap.docs
+        .map((doc) => doc.data())
+        .filter((data) => !data.voided)
+        .map((data) => {
+        const item = {
+            ingredientName: data.ingredientName,
+            quantityUsed: data.quantityUsed,
+            unit: data.unit,
+            category: data.category,
+            date: data.usedAt?.toDate?.()?.toISOString?.()?.slice(0, 10) ?? '',
+        };
+        if (role === 'admin')
+            item.consumptionCost = data.consumptionCost;
+        return item;
+    });
     const context = {
         restaurantId,
         restaurantName: user.restaurantName,
         role,
         inventory,
         waste,
+        usage,
+        notes: [
+            'Consumption is kitchen usage for orders/prep — not waste. Keep metrics separate.',
+        ],
         financial: role === 'admin'
             ? {
-                note: 'Compute valuation and waste loss from provided inventory/waste rows only.',
+                note: 'Compute valuation, waste loss, and consumption cost from provided rows only.',
             }
             : null,
     };
@@ -112,7 +132,7 @@ exports.askAiAssistant = (0, https_1.onCall)({
         const genAI = new generative_ai_1.GoogleGenerativeAI((0, config_1.getGeminiApiKey)());
         const model = genAI.getGenerativeModel({
             model: config_1.geminiConfig.defaultModel,
-            systemInstruction: 'Answer only from restaurantContext. Read-only. Never invent data. Staff must not receive financial answers.',
+            systemInstruction: 'Answer only from restaurantContext. Read-only. Never invent data. Staff must not receive financial answers. Treat waste and consumption as separate processes.',
         });
         const result = await model.generateContent(JSON.stringify({ userQuery: query, role, restaurantContext: context }));
         const text = result.response.text()?.trim();

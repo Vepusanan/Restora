@@ -125,6 +125,13 @@ export default function AdminDashboardScreen() {
             hint={period}
           />
           <MetricCard
+            label="Consumption"
+            value={formatMoney(finance.consumptionCost.totalCost, currency)}
+            icon="restaurant-outline"
+            onPress={() => router.push('/(admin)/(tabs)/usage')}
+            hint={period}
+          />
+          <MetricCard
             label="Pending staff"
             value={String(staff.pendingCount)}
             icon="people-outline"
@@ -145,9 +152,19 @@ export default function AdminDashboardScreen() {
             onPress={() => router.push('/(admin)/add-batch')}
           />
           <QuickAction
+            label="Log usage"
+            icon="restaurant-outline"
+            onPress={() => router.push('/(admin)/log-usage')}
+          />
+          <QuickAction
             label="Log waste"
             icon="trash-outline"
             onPress={() => router.push('/(admin)/log-waste')}
+          />
+          <QuickAction
+            label="Usage history"
+            icon="list-outline"
+            onPress={() => router.push('/(admin)/(tabs)/usage')}
           />
           <QuickAction
             label="Staff"
@@ -247,6 +264,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: spacing.sm,
+    alignItems: 'stretch',
   },
   actions: {
     gap: spacing.md,

@@ -21,6 +21,7 @@ export type AuditModule =
   | 'auth'
   | 'inventory'
   | 'waste'
+  | 'consumption'
   | 'expiry'
   | 'notifications'
   | 'cost'
@@ -46,6 +47,11 @@ export type AuditAction =
   | 'device_removed'
   | 'waste_created'
   | 'waste_voided'
+  | 'usage_created'
+  | 'usage_voided'
+  | 'usage_updated'
+  | 'inventory_reduced'
+  | 'fifo_allocation'
   | 'inventory_restored'
   | 'staff_approved'
   | 'staff_rejected'
@@ -92,6 +98,7 @@ export type AuditLogEntry = {
   notificationId: string | null;
   deviceId: string | null;
   wasteLogId: string | null;
+  usageLogId: string | null;
   timestamp: string;
   before: Record<string, unknown> | null;
   after: Record<string, unknown> | null;
@@ -115,6 +122,7 @@ export type WriteAuditInput = {
   notificationId?: string | null;
   deviceId?: string | null;
   wasteLogId?: string | null;
+  usageLogId?: string | null;
   /** Legacy alias for target.documentId when inventory/waste */
   batchId?: string;
   /** Legacy alias for actor.id */

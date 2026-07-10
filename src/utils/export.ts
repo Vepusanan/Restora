@@ -26,6 +26,7 @@ export function buildAnalyticsCsv(snapshot: AnalyticsDashboardSnapshot): string 
   lines.push(csvRow(['Summary']));
   lines.push(csvRow(['Current Inventory Value', snapshot.inventoryValue.toFixed(2)]));
   lines.push(csvRow(['Total Waste Cost', snapshot.totalWasteCost.toFixed(2)]));
+  lines.push(csvRow(['Total Consumption Cost', snapshot.totalConsumptionCost.toFixed(2)]));
   lines.push(csvRow(['Total Ingredient Cost', snapshot.totalIngredientCost.toFixed(2)]));
   lines.push('');
 
@@ -33,6 +34,13 @@ export function buildAnalyticsCsv(snapshot: AnalyticsDashboardSnapshot): string 
   lines.push(csvRow(['Period', 'Waste Cost']));
   for (const point of snapshot.wasteTrends) {
     lines.push(csvRow([point.label, point.totalLoss.toFixed(2)]));
+  }
+  lines.push('');
+
+  lines.push(csvRow(['Consumption Cost Trends']));
+  lines.push(csvRow(['Period', 'Consumption Cost', 'Quantity Used']));
+  for (const point of snapshot.consumptionTrends) {
+    lines.push(csvRow([point.label, point.totalCost.toFixed(2), point.quantityUsed]));
   }
   lines.push('');
 
@@ -46,6 +54,58 @@ export function buildAnalyticsCsv(snapshot: AnalyticsDashboardSnapshot): string 
         row.totalLoss.toFixed(2),
         row.percentage.toFixed(2),
         row.eventCount,
+      ]),
+    );
+  }
+  lines.push('');
+
+  lines.push(csvRow(['Top Consumed Ingredients']));
+  lines.push(csvRow(['Rank', 'Ingredient', 'Total Cost', 'Quantity', 'Unit', 'Events']));
+  for (const row of snapshot.topConsumed) {
+    lines.push(
+      csvRow([
+        row.rank,
+        row.ingredientName,
+        row.totalCost.toFixed(2),
+        row.quantityUsed,
+        row.unit,
+        row.eventCount,
+      ]),
+    );
+  }
+  lines.push('');
+
+  lines.push(csvRow(['Consumption by Category']));
+  lines.push(csvRow(['Category', 'Total Cost', 'Quantity', 'Events']));
+  for (const row of snapshot.consumptionByCategory) {
+    lines.push(
+      csvRow([row.category, row.totalCost.toFixed(2), row.quantityUsed, row.eventCount]),
+    );
+  }
+  lines.push('');
+
+  lines.push(csvRow(['Inventory Turnover']));
+  lines.push(
+    csvRow([
+      'Ingredient',
+      'Consumed',
+      'Remaining',
+      'Turnover',
+      'Frequency',
+      'Avg Daily',
+      'Unit',
+    ]),
+  );
+  for (const row of snapshot.inventoryTurnover) {
+    lines.push(
+      csvRow([
+        row.ingredientName,
+        row.quantityConsumed,
+        row.remainingQuantity,
+        row.turnoverRatio.toFixed(3),
+        row.frequency,
+        row.averageDailyConsumption.toFixed(3),
+        row.unit,
       ]),
     );
   }
@@ -133,6 +193,7 @@ export function buildAnalyticsPdfHtml(snapshot: AnalyticsDashboardSnapshot): str
   <div class="cards">
     <div class="card"><div class="label">Inventory Value</div><div class="value">${formatMoney(snapshot.inventoryValue)}</div></div>
     <div class="card"><div class="label">Waste Cost</div><div class="value">${formatMoney(snapshot.totalWasteCost)}</div></div>
+    <div class="card"><div class="label">Consumption Cost</div><div class="value">${formatMoney(snapshot.totalConsumptionCost)}</div></div>
     <div class="card"><div class="label">Ingredient Cost</div><div class="value">${formatMoney(snapshot.totalIngredientCost)}</div></div>
   </div>
 

@@ -235,6 +235,34 @@ export const firestoreUserApi = {
     });
   },
 
+  async listUsage(idToken: string, restaurantId: string) {
+    const docs = await firestoreRunQuery(
+      idToken,
+      'inventory_usage',
+      'restaurantId',
+      'EQUAL',
+      restaurantId,
+      120,
+    );
+    return docs.map((doc) => {
+      const fields = doc.fields || {};
+      const timestamp =
+        fields.usedAt?.timestampValue ||
+        fields.createdAt?.timestampValue ||
+        '';
+      return {
+        id: docIdFromName(doc.name),
+        ingredientName: readString(fields, 'ingredientName'),
+        quantityUsed: readNumber(fields, 'quantityUsed'),
+        unit: readString(fields, 'unit'),
+        category: readString(fields, 'category'),
+        consumptionCost: readNumber(fields, 'consumptionCost'),
+        voided: readBoolean(fields, 'voided'),
+        date: String(timestamp).slice(0, 10),
+      };
+    });
+  },
+
   async getAiAnalytics(idToken: string, restaurantId: string) {
     const doc = await firestoreGet(idToken, `aiAnalytics/${restaurantId}`);
     if (!doc?.fields) return null;

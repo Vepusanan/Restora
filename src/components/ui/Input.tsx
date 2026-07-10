@@ -40,6 +40,7 @@ export function Input({ label, error, leftIcon, style, onFocus, onBlur, ...props
           placeholderTextColor={colors.textSecondary}
           style={[styles.input, webTextInputReset, style]}
           autoCapitalize="none"
+          {...props}
           onFocus={(event) => {
             setFocused(true);
             onFocus?.(event);
@@ -48,7 +49,6 @@ export function Input({ label, error, leftIcon, style, onFocus, onBlur, ...props
             setFocused(false);
             onBlur?.(event);
           }}
-          {...props}
         />
       </View>
       {error ? <Text style={styles.error}>{error}</Text> : null}

@@ -32,9 +32,19 @@ export type WasteContextItem = {
   costLoss?: number;
 };
 
+export type UsageContextItem = {
+  ingredientName: string;
+  quantityUsed: number;
+  unit: string;
+  category: string;
+  date: string;
+  consumptionCost?: number;
+};
+
 export type FinancialContext = {
   inventoryValue: number;
   wasteLossTotal: number;
+  consumptionCostTotal?: number;
   ingredientCostMtd?: number;
 };
 
@@ -45,6 +55,7 @@ export type RestaurantAiContext = {
   asOf: string;
   inventory: InventoryContextItem[];
   waste: WasteContextItem[];
+  usage: UsageContextItem[];
   financial: FinancialContext | null;
   notes: string[];
 };
@@ -95,10 +106,23 @@ export type AiAnalyticsContext = {
     }>;
     dailyTrend: Array<{ date: string; totalLoss: number }>;
   };
+  consumption: {
+    totalCostInRange: number;
+    eventCountInRange: number;
+    topIngredients: Array<{
+      ingredientName: string;
+      totalCost: number;
+      quantityUsed: number;
+      eventCount: number;
+    }>;
+    byCategory: Array<{ category: string; totalCost: number; eventCount: number }>;
+    dailyTrend: Array<{ date: string; totalCost: number }>;
+  };
   cost: {
     inventoryValue: number;
     ingredientSpendInRange: number;
     wasteLossRatioPercent: number | null;
+    consumptionCostRatioPercent: number | null;
   };
   notes: string[];
 };
@@ -108,6 +132,7 @@ export type AiInsightSeverity = 'Critical' | 'High' | 'Medium' | 'Low';
 export type AiInsightCategory =
   | 'Inventory'
   | 'Waste'
+  | 'Consumption'
   | 'Cost'
   | 'Expiry'
   | 'Operations';

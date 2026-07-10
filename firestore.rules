@@ -38,6 +38,17 @@ service cloud.firestore {
       return reason in ['Expired', 'Burnt', 'Prep Waste', 'Leftovers'];
     }
 
+    function isValidUsageCategory(category) {
+      return category in [
+        'Breakfast',
+        'Lunch',
+        'Dinner',
+        'Recipe',
+        'Manual Adjustment',
+        'Kitchen Use'
+      ];
+    }
+
     match /restaurantCodes/{code} {
       allow get: if true;
       allow list: if false;
@@ -215,6 +226,11 @@ service cloud.firestore {
           'threshold_updated',
           'waste_created',
           'waste_voided',
+          'usage_created',
+          'usage_voided',
+          'usage_updated',
+          'inventory_reduced',
+          'fifo_allocation',
           'inventory_restored',
           'device_registered',
           'device_removed',
@@ -339,6 +355,57 @@ service cloud.firestore {
         && request.resource.data.costLoss == resource.data.costLoss
         && request.resource.data.loggedBy == resource.data.loggedBy
         && request.resource.data.timestamp == resource.data.timestamp
+        && request.resource.data.createdAt == resource.data.createdAt;
+
+      allow delete: if false;
+    }
+
+    // Inventory usage / consumption (Module 3.11 FR-059–FR-064). Separate from waste.
+    match /inventory_usage/{docId} {
+      allow read: if isApproved()
+        && resource.data.restaurantId == userDoc().restaurantId;
+
+      allow create: if isApproved()
+        && request.resource.data.restaurantId == userDoc().restaurantId
+        && request.resource.data.usedBy == request.auth.uid
+        && request.resource.data.voided == false
+        && request.resource.data.voidedAt == null
+        && request.resource.data.voidedBy == null
+        && request.resource.data.quantityUsed is number
+        && request.resource.data.quantityUsed > 0
+        && request.resource.data.unitCost is number
+        && request.resource.data.unitCost >= 0
+        && request.resource.data.consumptionCost is number
+        && request.resource.data.consumptionCost ==
+          request.resource.data.quantityUsed * request.resource.data.unitCost
+        && isValidUsageCategory(request.resource.data.category)
+        && request.resource.data.usageGroupId is string
+        && exists(/databases/$(database)/documents/inventoryBatches/$(request.resource.data.batchId))
+        && batchData(request.resource.data.batchId).restaurantId == userDoc().restaurantId
+        && batchData(request.resource.data.batchId).archived == false
+        && batchData(request.resource.data.batchId).consumed == false
+        && request.resource.data.quantityUsed <= batchData(request.resource.data.batchId).quantity
+        && request.resource.data.unitCost == batchData(request.resource.data.batchId).unitCost
+        && request.resource.data.ingredientName == batchData(request.resource.data.batchId).ingredientName
+        && request.resource.data.unit == batchData(request.resource.data.batchId).unit;
+
+      // Admin void only — cannot alter financial/identity fields.
+      allow update: if isAdmin()
+        && resource.data.restaurantId == userDoc().restaurantId
+        && resource.data.voided == false
+        && request.resource.data.voided == true
+        && request.resource.data.voidedBy == request.auth.uid
+        && request.resource.data.restaurantId == resource.data.restaurantId
+        && request.resource.data.batchId == resource.data.batchId
+        && request.resource.data.ingredientName == resource.data.ingredientName
+        && request.resource.data.quantityUsed == resource.data.quantityUsed
+        && request.resource.data.unit == resource.data.unit
+        && request.resource.data.category == resource.data.category
+        && request.resource.data.unitCost == resource.data.unitCost
+        && request.resource.data.consumptionCost == resource.data.consumptionCost
+        && request.resource.data.usedBy == resource.data.usedBy
+        && request.resource.data.usedAt == resource.data.usedAt
+        && request.resource.data.usageGroupId == resource.data.usageGroupId
         && request.resource.data.createdAt == resource.data.createdAt;
 
       allow delete: if false;

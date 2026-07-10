@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react';
 import { useInventory } from '@hooks/useInventory';
 import { useWasteLogs } from '@hooks/useWasteLogs';
+import { useConsumptionLogs } from '@hooks/useConsumptionLogs';
 import { useAuth } from '@hooks/useAuth';
 import { canAccessModule } from '@utils/rbac';
 import {
@@ -14,6 +15,13 @@ import {
   rankTopWastedIngredients,
   totalWasteInRange,
 } from '@utils/analytics';
+import {
+  aggregateConsumptionByCategory,
+  aggregateConsumptionByPeriod,
+  buildInventoryTurnover,
+  calculateConsumptionCostTotal,
+  rankTopConsumedIngredients,
+} from '@utils/consumption';
 import type {
   AggregationPeriod,
   AnalyticsDashboardSnapshot,
@@ -21,15 +29,15 @@ import type {
 } from '@/types';
 
 /**
- * Admin analytics dashboard (FR-036–FR-041).
- * Realtime via existing inventory + waste listeners; client-side aggregation (no Blaze).
+ * Admin analytics dashboard (FR-036–FR-041 + Module 3.11 consumption).
+ * Realtime via inventory + waste + usage listeners; client-side aggregation.
  */
 export function useAnalyticsDashboard(restaurantId: string | undefined) {
   const { profile, isAdmin } = useAuth();
-  // Admin layout already gates this route; also accept isAdmin for profile timing edge cases.
   const allowed = isAdmin || canAccessModule(profile?.role, 'analytics');
   const inventory = useInventory(allowed ? restaurantId : undefined);
   const waste = useWasteLogs(allowed ? restaurantId : undefined);
+  const usage = useConsumptionLogs(allowed ? restaurantId : undefined);
 
   const [range, setRange] = useState<FinancialDateRange>(() => defaultFinancialRange());
   const [period, setPeriod] = useState<AggregationPeriod>('day');
@@ -55,14 +63,41 @@ export function useAnalyticsDashboard(restaurantId: string | undefined) {
     [waste.logs, range, topLimit],
   );
 
+  const consumptionTrends = useMemo(
+    () => aggregateConsumptionByPeriod(usage.logs, range, period),
+    [usage.logs, range, period],
+  );
+
+  const consumptionCost = useMemo(
+    () => calculateConsumptionCostTotal(usage.logs, range),
+    [usage.logs, range],
+  );
+
+  const topConsumed = useMemo(
+    () => rankTopConsumedIngredients(usage.logs, range, topLimit),
+    [usage.logs, range, topLimit],
+  );
+
+  const consumptionByCategory = useMemo(
+    () => aggregateConsumptionByCategory(usage.logs, range),
+    [usage.logs, range],
+  );
+
+  const inventoryTurnover = useMemo(
+    () => buildInventoryTurnover(inventory.batches, usage.logs, range, inventory.now),
+    [inventory.batches, usage.logs, range, inventory.now],
+  );
+
   const ingredientBreakdown = useMemo(
-    () => buildIngredientCostBreakdown(inventory.batches, waste.logs, range),
-    [inventory.batches, waste.logs, range],
+    () => buildIngredientCostBreakdown(inventory.batches, waste.logs, range, usage.logs),
+    [inventory.batches, waste.logs, usage.logs, range],
   );
 
   const totalIngredientCost = useMemo(
-    () => calculateIngredientCost(inventory.batches, waste.logs, range).totalCost,
-    [inventory.batches, waste.logs, range],
+    () =>
+      calculateIngredientCost(inventory.batches, waste.logs, range, undefined, usage.logs)
+        .totalCost,
+    [inventory.batches, waste.logs, usage.logs, range],
   );
 
   const snapshot: AnalyticsDashboardSnapshot = useMemo(
@@ -73,9 +108,14 @@ export function useAnalyticsDashboard(restaurantId: string | undefined) {
       generatedAt: new Date().toISOString(),
       inventoryValue: valuation.totalValue,
       totalWasteCost,
+      totalConsumptionCost: consumptionCost.totalCost,
       totalIngredientCost,
       wasteTrends,
+      consumptionTrends,
       topWasted,
+      topConsumed,
+      consumptionByCategory,
+      inventoryTurnover,
       ingredientBreakdown,
     }),
     [
@@ -84,17 +124,22 @@ export function useAnalyticsDashboard(restaurantId: string | undefined) {
       period,
       valuation.totalValue,
       totalWasteCost,
+      consumptionCost.totalCost,
       totalIngredientCost,
       wasteTrends,
+      consumptionTrends,
       topWasted,
+      topConsumed,
+      consumptionByCategory,
+      inventoryTurnover,
       ingredientBreakdown,
     ],
   );
 
   return {
     allowed,
-    loading: allowed ? inventory.loading || waste.loading : false,
-    error: inventory.error || waste.error,
+    loading: allowed ? inventory.loading || waste.loading || usage.loading : false,
+    error: inventory.error || waste.error || usage.error,
     range,
     setRange,
     period,
@@ -105,6 +150,11 @@ export function useAnalyticsDashboard(restaurantId: string | undefined) {
     wasteTrends,
     totalWasteCost,
     topWasted,
+    consumptionTrends,
+    totalConsumptionCost: consumptionCost.totalCost,
+    topConsumed,
+    consumptionByCategory,
+    inventoryTurnover,
     ingredientBreakdown,
     totalIngredientCost,
     lastUpdated: inventory.now,

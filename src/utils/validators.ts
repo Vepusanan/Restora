@@ -93,6 +93,18 @@ export const createWasteSchema = z.object({
   }),
 });
 
+export const createUsageSchema = z.object({
+  ingredientKey: z.string().trim().min(1, 'Select an ingredient'),
+  quantityUsed: z.number().positive('Quantity must be greater than 0'),
+  category: z.enum(
+    ['Breakfast', 'Lunch', 'Dinner', 'Recipe', 'Manual Adjustment', 'Kitchen Use'],
+    { message: 'Select a usage category' },
+  ),
+  notes: z.string().trim().max(500, 'Notes must be 500 characters or fewer').optional(),
+  batchId: z.string().trim().min(1).nullable().optional(),
+  allowExpired: z.boolean().optional(),
+});
+
 export type LoginFormValues = z.infer<typeof loginSchema>;
 export type AdminRegisterFormValues = z.infer<typeof adminRegisterSchema>;
 export type StaffRegisterFormValues = z.infer<typeof staffRegisterSchema>;
@@ -101,3 +113,4 @@ export type ForgotPasswordFormValues = z.infer<typeof forgotPasswordSchema>;
 export type CreateBatchFormValues = z.infer<typeof createBatchSchema>;
 export type EditBatchFormValues = z.infer<typeof editBatchSchema>;
 export type CreateWasteFormValues = z.infer<typeof createWasteSchema>;
+export type CreateUsageFormValues = z.infer<typeof createUsageSchema>;

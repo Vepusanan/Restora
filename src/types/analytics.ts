@@ -34,8 +34,13 @@ export type AnalyticsDashboardSnapshot = {
   generatedAt: string;
   inventoryValue: number;
   totalWasteCost: number;
+  totalConsumptionCost: number;
   totalIngredientCost: number;
   wasteTrends: WasteTrendPoint[];
+  consumptionTrends: import('./consumption').ConsumptionTrendPoint[];
   topWasted: TopWastedIngredient[];
+  topConsumed: import('./consumption').TopConsumedIngredient[];
+  consumptionByCategory: import('./consumption').ConsumptionByCategoryRow[];
+  inventoryTurnover: import('./consumption').InventoryTurnoverRow[];
   ingredientBreakdown: IngredientCostShare[];
 };

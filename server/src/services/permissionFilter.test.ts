@@ -34,15 +34,26 @@ test('filterContextForRole strips costs for staff', () => {
         costLoss: 500,
       },
     ],
-    { inventoryValue: 5000, wasteLossTotal: 500 },
+    [
+      {
+        ingredientName: 'Chicken',
+        quantityUsed: 2,
+        unit: 'kg',
+        category: 'Lunch',
+        date: '2026-07-10',
+        consumptionCost: 1000,
+      },
+    ],
+    { inventoryValue: 5000, wasteLossTotal: 500, consumptionCostTotal: 1000 },
   );
 
   assert.equal(filtered.financial, null);
   assert.equal('unitCost' in filtered.inventory[0]!, false);
   assert.equal('costLoss' in filtered.waste[0]!, false);
+  assert.equal('consumptionCost' in filtered.usage[0]!, false);
 });
 
-test('admin context keeps financial summary', () => {
+test('admin context keeps financial summary and usage', () => {
   const context = buildRestaurantContext({
     profile: {
       uid: 'a1',
@@ -74,12 +85,25 @@ test('admin context keeps financial summary', () => {
         date: '2026-07-01',
       },
     ],
+    usageLogs: [
+      {
+        ingredientName: 'Tomato',
+        quantityUsed: 2,
+        unit: 'kg',
+        category: 'Lunch',
+        consumptionCost: 200,
+        voided: false,
+        date: '2026-07-02',
+      },
+    ],
     now: new Date(2026, 6, 10),
   });
 
   assert.ok(context.financial);
   assert.equal(context.financial?.inventoryValue, 1000);
   assert.equal(context.financial?.wasteLossTotal, 100);
+  assert.equal(context.financial?.consumptionCostTotal, 200);
+  assert.equal(context.usage.length, 1);
 });
 
 test('staff context build removes financial block', () => {
@@ -104,9 +128,21 @@ test('staff context build removes financial block', () => {
       },
     ],
     wasteLogs: [],
+    usageLogs: [
+      {
+        ingredientName: 'Milk',
+        quantityUsed: 1,
+        unit: 'L',
+        category: 'Breakfast',
+        consumptionCost: 80,
+        voided: false,
+        date: '2026-07-02',
+      },
+    ],
     now: new Date(2026, 6, 10),
   });
 
   assert.equal(context.financial, null);
   assert.equal(context.inventory[0] && 'unitCost' in context.inventory[0], false);
+  assert.equal(context.usage[0] && 'consumptionCost' in context.usage[0], false);
 });

@@ -157,15 +157,17 @@ app.post('/ai/ask', async (req, res) => {
       }
     }
 
-    const [batches, wasteLogs] = await Promise.all([
+    const [batches, wasteLogs, usageLogs] = await Promise.all([
       firestoreUserApi.listInventory(idToken, profile.restaurantId),
       firestoreUserApi.listWaste(idToken, profile.restaurantId),
+      firestoreUserApi.listUsage(idToken, profile.restaurantId),
     ]);
 
     const context = buildRestaurantContext({
       profile,
       batches,
       wasteLogs,
+      usageLogs,
     });
 
     const result = await askGemini({ query, context });
@@ -198,9 +200,10 @@ app.post('/ai/analytics', async (req, res) => {
         ? { startDate, endDate }
         : undefined;
 
-    const [batches, wasteLogs, restaurant] = await Promise.all([
+    const [batches, wasteLogs, usageLogs, restaurant] = await Promise.all([
       firestoreUserApi.listInventory(idToken, profile.restaurantId),
       firestoreUserApi.listWaste(idToken, profile.restaurantId),
+      firestoreUserApi.listUsage(idToken, profile.restaurantId),
       firestoreUserApi.getRestaurant(idToken, profile.restaurantId),
     ]);
 
@@ -209,6 +212,7 @@ app.post('/ai/analytics', async (req, res) => {
       restaurantName: profile.restaurantName,
       batches,
       wasteLogs,
+      usageLogs,
       settings: restaurant,
       range,
     });

@@ -16,7 +16,7 @@ export default function AdminTabsLayout() {
             icon: 'add',
             label: 'Add batch',
             onPress: () => router.push('/(admin)/add-batch'),
-            onLongPress: () => router.push('/(admin)/log-waste'),
+            onLongPress: () => router.push('/(admin)/log-usage'),
           }}
         />
       )}
@@ -51,6 +51,14 @@ export default function AdminTabsLayout() {
         options={{
           title: 'More',
           headerShown: false,
+        }}
+      />
+      <Tabs.Screen
+        name="usage"
+        options={{
+          title: 'Usage',
+          href: null,
+          headerLeft: () => <HeaderBackButton />,
         }}
       />
       <Tabs.Screen

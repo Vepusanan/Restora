@@ -53,7 +53,6 @@ exports.evaluateInventoryExpiry = (0, scheduler_1.onSchedule)({
             .get();
         if (batchesSnap.empty)
             continue;
-        const { tokens: allTokens, userTokenMap, userIds } = await (0, pushService_1.loadRestaurantDeviceTokens)(restaurantId);
         for (const batchDoc of batchesSnap.docs) {
             evaluated += 1;
             const data = batchDoc.data();
@@ -72,8 +71,10 @@ exports.evaluateInventoryExpiry = (0, scheduler_1.onSchedule)({
                 evaluatedTone: nextTone,
                 lastEvaluatedAt: firestore_1.FieldValue.serverTimestamp(),
             };
-            if (!shouldNotify) {
-                await batchDoc.ref.update(basePatch);
+            if (!shouldNotify || (nextTone !== 'amber' && nextTone !== 'red')) {
+                if (toneChanged) {
+                    await batchDoc.ref.update(basePatch);
+                }
                 continue;
             }
             transitions += 1;
@@ -124,6 +125,8 @@ exports.evaluateInventoryExpiry = (0, scheduler_1.onSchedule)({
                 expiryDate,
                 daysRemaining: String(daysRemaining),
             };
+            // FR-057 — only deliver to users who opted into this tone.
+            const { tokens: allTokens, userTokenMap, userIds } = await (0, pushService_1.loadRestaurantDeviceTokens)(restaurantId, { tone: nextTone });
             const pushResult = await (0, pushService_1.sendRestaurantPush)({
                 tokens: allTokens,
                 title: copy.title,

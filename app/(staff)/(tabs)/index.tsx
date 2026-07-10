@@ -79,16 +79,16 @@ export default function StaffHomeScreen() {
           >
             <View style={styles.ctaRow}>
               <Button
-                title="Log waste"
-                icon="trash-outline"
-                onPress={() => router.push('/(staff)/log-waste')}
+                title="Log usage"
+                icon="restaurant-outline"
+                onPress={() => router.push('/(staff)/log-usage')}
                 style={styles.ctaFlex}
               />
               <Button
-                title="Inventory"
+                title="Log waste"
                 variant="onDark"
-                icon="cube-outline"
-                onPress={() => router.push('/(staff)/(tabs)/inventory')}
+                icon="trash-outline"
+                onPress={() => router.push('/(staff)/log-waste')}
                 style={styles.ctaFlex}
               />
             </View>
@@ -101,6 +101,16 @@ export default function StaffHomeScreen() {
             label="Add batch"
             icon="add-circle-outline"
             onPress={() => router.push('/(staff)/add-batch')}
+          />
+          <QuickAction
+            label="Log usage"
+            icon="restaurant-outline"
+            onPress={() => router.push('/(staff)/log-usage')}
+          />
+          <QuickAction
+            label="Usage log"
+            icon="list-outline"
+            onPress={() => router.push('/(staff)/(tabs)/usage')}
           />
           <QuickAction
             label="Waste log"

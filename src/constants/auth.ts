@@ -9,6 +9,8 @@ export const COLLECTIONS = {
   auditLogs: 'auditLogs',
   wasteLogs: 'wasteLogs',
   waste: 'waste',
+  /** Module 3.11 — kitchen usage (separate from waste). Firestore id: inventory_usage */
+  inventoryUsage: 'inventory_usage',
   /** Admin-only financial collections (rules deny staff) */
   costs: 'costs',
   analytics: 'analytics',

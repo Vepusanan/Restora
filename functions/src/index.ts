@@ -12,3 +12,5 @@ export { cleanupInvalidFCMTokens } from './messaging/cleanupInvalidFCMTokens';
 export { sendRestaurantNotification } from './messaging/sendRestaurantNotification';
 export { createWasteLog } from './waste/createWasteLog';
 export { voidWasteEntry } from './waste/voidWasteEntry';
+export { createUsageLog } from './consumption/createUsageLog';
+export { voidUsageEntry } from './consumption/voidUsageEntry';

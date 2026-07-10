@@ -3,6 +3,7 @@ export type AiInsightSeverity = 'Critical' | 'High' | 'Medium' | 'Low';
 export type AiInsightCategory =
   | 'Inventory'
   | 'Waste'
+  | 'Consumption'
   | 'Cost'
   | 'Expiry'
   | 'Operations';

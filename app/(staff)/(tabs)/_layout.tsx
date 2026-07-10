@@ -14,9 +14,10 @@ export default function StaffTabsLayout() {
           {...props}
           visibleRouteNames={['index', 'inventory', 'inbox', 'settings']}
           fab={{
-            icon: 'trash',
-            label: 'Log waste',
-            onPress: () => router.push('/(staff)/log-waste'),
+            icon: 'restaurant',
+            label: 'Log usage',
+            onPress: () => router.push('/(staff)/log-usage'),
+            onLongPress: () => router.push('/(staff)/log-waste'),
           }}
           badgeRoutes={{ inbox: unread }}
         />
@@ -58,6 +59,13 @@ export default function StaffTabsLayout() {
         name="waste"
         options={{
           title: 'Waste',
+          href: null,
+        }}
+      />
+      <Tabs.Screen
+        name="usage"
+        options={{
+          title: 'Usage',
           href: null,
         }}
       />

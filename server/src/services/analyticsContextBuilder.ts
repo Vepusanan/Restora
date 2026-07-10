@@ -21,6 +21,16 @@ type RawWaste = {
   date: string;
 };
 
+type RawUsage = {
+  ingredientName: string;
+  quantityUsed: number;
+  unit: string;
+  category: string;
+  consumptionCost: number;
+  voided: boolean;
+  date: string;
+};
+
 type RestaurantSettings = {
   currency: string;
   expiryAlertThreshold: number;
@@ -64,6 +74,7 @@ export function buildAiAnalyticsContext(input: {
   restaurantName: string;
   batches: RawBatch[];
   wasteLogs: RawWaste[];
+  usageLogs?: RawUsage[];
   settings?: RestaurantSettings | null;
   range?: { startDate: string; endDate: string };
   now?: Date;
@@ -197,6 +208,42 @@ export function buildAiAnalyticsContext(input: {
     .sort((a, b) => a.date.localeCompare(b.date))
     .slice(-14);
 
+  const activeUsage = (input.usageLogs ?? []).filter(
+    (log) => !log.voided && inRange(log.date, range.startDate, range.endDate),
+  );
+  let totalConsumptionCost = 0;
+  const usageByIngredient = new Map<
+    string,
+    { ingredientName: string; totalCost: number; quantityUsed: number; eventCount: number }
+  >();
+  const usageByCategory = new Map<string, { totalCost: number; eventCount: number }>();
+  const usageDaily = new Map<string, number>();
+
+  for (const log of activeUsage) {
+    const cost = Number(log.consumptionCost) || 0;
+    totalConsumptionCost += cost;
+    const key = log.ingredientName.toLowerCase();
+    const ing = usageByIngredient.get(key) ?? {
+      ingredientName: log.ingredientName,
+      totalCost: 0,
+      quantityUsed: 0,
+      eventCount: 0,
+    };
+    ing.totalCost += cost;
+    ing.quantityUsed += Number(log.quantityUsed) || 0;
+    ing.eventCount += 1;
+    usageByIngredient.set(key, ing);
+
+    const cat = log.category || 'Kitchen Use';
+    const catRow = usageByCategory.get(cat) ?? { totalCost: 0, eventCount: 0 };
+    catRow.totalCost += cost;
+    catRow.eventCount += 1;
+    usageByCategory.set(cat, catRow);
+
+    const day = log.date.slice(0, 10);
+    usageDaily.set(day, (usageDaily.get(day) ?? 0) + cost);
+  }
+
   let ingredientSpendInRange = 0;
   for (const batch of input.batches) {
     const received = (batch.dateReceived || '').slice(0, 10);
@@ -208,17 +255,21 @@ export function buildAiAnalyticsContext(input: {
 
   const valuationRounded = round2(valuation);
   const wasteRounded = round2(totalLossInRange);
+  const consumptionRounded = round2(totalConsumptionCost);
   const spendRounded = round2(ingredientSpendInRange);
   const wasteLossRatioPercent =
     spendRounded > 0 ? round2((wasteRounded / spendRounded) * 100) : null;
+  const consumptionCostRatioPercent =
+    spendRounded > 0 ? round2((consumptionRounded / spendRounded) * 100) : null;
 
   const notes: string[] = [
     'Admin-only analytics context. All monetary fields are included.',
     'Use only these numbers. If a list is empty, say data is insufficient for that topic.',
     'Do not invent ingredients, costs, or percentages not present in this JSON.',
+    'Consumption is kitchen usage (orders/prep), not waste. Keep waste and consumption separate.',
   ];
 
-  if (activeBatchCount === 0 && activeWaste.length === 0) {
+  if (activeBatchCount === 0 && activeWaste.length === 0 && activeUsage.length === 0) {
     notes.push('Very little operational data available for this restaurant/range.');
   }
 
@@ -246,10 +297,35 @@ export function buildAiAnalyticsContext(input: {
       topIngredients,
       dailyTrend,
     },
+    consumption: {
+      totalCostInRange: consumptionRounded,
+      eventCountInRange: activeUsage.length,
+      topIngredients: Array.from(usageByIngredient.values())
+        .map((row) => ({
+          ingredientName: row.ingredientName,
+          totalCost: round2(row.totalCost),
+          quantityUsed: round2(row.quantityUsed),
+          eventCount: row.eventCount,
+        }))
+        .sort((a, b) => b.totalCost - a.totalCost)
+        .slice(0, 8),
+      byCategory: Array.from(usageByCategory.entries())
+        .map(([category, row]) => ({
+          category,
+          totalCost: round2(row.totalCost),
+          eventCount: row.eventCount,
+        }))
+        .sort((a, b) => b.totalCost - a.totalCost),
+      dailyTrend: Array.from(usageDaily.entries())
+        .map(([date, totalCost]) => ({ date, totalCost: round2(totalCost) }))
+        .sort((a, b) => a.date.localeCompare(b.date))
+        .slice(-14),
+    },
     cost: {
       inventoryValue: valuationRounded,
       ingredientSpendInRange: spendRounded,
       wasteLossRatioPercent,
+      consumptionCostRatioPercent,
     },
     notes,
   };

@@ -57,6 +57,21 @@ export type {
 } from './waste';
 
 export type {
+  UsageCategory,
+  InventoryUsageLog,
+  CreateUsageInput,
+  FifoAllocation,
+  UsageVisibilityFilter,
+  UsageFilters,
+  UsageSummary,
+  ConsumptionTrendPoint,
+  TopConsumedIngredient,
+  ConsumptionByCategoryRow,
+  InventoryTurnoverRow,
+  ConsumptionCostResult,
+} from './consumption';
+
+export type {
   IngredientCostRow,
   WasteLossRow,
   InventoryValuationResult,

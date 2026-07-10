@@ -15,6 +15,8 @@ import type {
   UserStatus,
   WasteLog,
   WasteReason,
+  InventoryUsageLog,
+  UsageCategory,
 } from '@/types';
 import { EXPIRY_AMBER_DAYS } from '@constants/inventory';
 import { clampExpiryThreshold, ingredientKey, normalizeIngredientName } from '@utils/expiry';
@@ -244,6 +246,7 @@ export function mapAuditLogEntry(id: string, data: DocumentData): AuditLogEntry 
     notificationId: data.notificationId != null ? String(data.notificationId) : null,
     deviceId: data.deviceId != null ? String(data.deviceId) : null,
     wasteLogId: data.wasteLogId != null ? String(data.wasteLogId) : null,
+    usageLogId: data.usageLogId != null ? String(data.usageLogId) : null,
     timestamp: toIso(data.timestamp),
     before,
     after,
@@ -307,6 +310,38 @@ export function mapWasteLog(id: string, data: DocumentData): WasteLog {
     voided: Boolean(data.voided),
     voidedAt: data.voidedAt ? toIso(data.voidedAt) : null,
     voidedBy: data.voidedBy ? String(data.voidedBy) : null,
+    createdAt: toIso(data.createdAt),
+    updatedAt: toIso(data.updatedAt ?? data.createdAt),
+  };
+}
+
+export function mapInventoryUsageLog(id: string, data: DocumentData): InventoryUsageLog {
+  const quantityUsed = Number(data.quantityUsed ?? 0);
+  const unitCost = Number(data.unitCost ?? 0);
+  const consumptionCost =
+    data.consumptionCost != null
+      ? Number(data.consumptionCost)
+      : calculateCostLoss(quantityUsed, unitCost);
+
+  return {
+    id,
+    restaurantId: String(data.restaurantId ?? ''),
+    batchId: String(data.batchId ?? ''),
+    ingredientName: String(data.ingredientName ?? ''),
+    ingredientKey: String(data.ingredientKey ?? ingredientKey(String(data.ingredientName ?? ''))),
+    quantityUsed,
+    unit: String(data.unit ?? ''),
+    category: (data.category as UsageCategory) ?? 'Kitchen Use',
+    notes: String(data.notes ?? ''),
+    unitCost,
+    consumptionCost,
+    usedBy: String(data.usedBy ?? ''),
+    usedByName: String(data.usedByName ?? ''),
+    usedAt: toIso(data.usedAt ?? data.createdAt),
+    voided: Boolean(data.voided),
+    voidedAt: data.voidedAt ? toIso(data.voidedAt) : null,
+    voidedBy: data.voidedBy ? String(data.voidedBy) : null,
+    usageGroupId: String(data.usageGroupId ?? id),
     createdAt: toIso(data.createdAt),
     updatedAt: toIso(data.updatedAt ?? data.createdAt),
   };

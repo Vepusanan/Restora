@@ -89,6 +89,7 @@ export const auditService = {
       input.target?.documentId ||
       input.batchId ||
       input.wasteLogId ||
+      input.usageLogId ||
       input.notificationId ||
       input.deviceId ||
       actor.id ||
@@ -125,6 +126,7 @@ export const auditService = {
       notificationId: input.notificationId ?? null,
       deviceId: input.deviceId ?? null,
       wasteLogId: input.wasteLogId ?? null,
+      usageLogId: input.usageLogId ?? null,
       // Legacy fields for existing queries / rules
       userId: actor.id,
       batchId: input.batchId ?? (targetCollection === 'inventoryBatches' ? targetDocumentId : ''),
