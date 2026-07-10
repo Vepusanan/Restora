@@ -1,0 +1,188 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function userDoc() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
+    }
+
+    function hasProfile() {
+      return isSignedIn() && exists(/databases/$(database)/documents/users/$(request.auth.uid));
+    }
+
+    function isApproved() {
+      return hasProfile() && userDoc().status == 'approved';
+    }
+
+    function isAdmin() {
+      return isApproved() && userDoc().role == 'admin';
+    }
+
+    function sameRestaurant(restaurantId) {
+      return isApproved() && userDoc().restaurantId == restaurantId;
+    }
+
+    function isOwner(uid) {
+      return isSignedIn() && request.auth.uid == uid;
+    }
+
+    match /restaurantCodes/{code} {
+      allow get: if true;
+      allow list: if false;
+      allow create: if isSignedIn()
+        && request.resource.data.ownerId == request.auth.uid
+        && request.resource.data.restaurantId is string
+        && request.resource.data.code == code
+        && request.resource.data.name is string;
+      allow update, delete: if false;
+    }
+
+    match /restaurants/{restaurantId} {
+      allow get: if isAdmin() && sameRestaurant(restaurantId);
+      allow list: if false;
+      allow create: if isSignedIn()
+        && request.resource.data.ownerId == request.auth.uid
+        && request.resource.data.name is string
+        && request.resource.data.code is string;
+      allow update: if isAdmin() && sameRestaurant(restaurantId);
+      allow delete: if false;
+    }
+
+    match /users/{userId} {
+      allow read: if isOwner(userId)
+        || (isAdmin() && resource.data.restaurantId == userDoc().restaurantId);
+
+      allow create: if isOwner(userId)
+        && request.resource.data.uid == userId
+        && request.resource.data.email is string
+        && request.resource.data.displayName is string
+        && request.resource.data.restaurantId is string
+        && request.resource.data.restaurantCode is string
+        && request.resource.data.restaurantName is string
+        && (
+          (
+            request.resource.data.role == 'admin'
+            && request.resource.data.status == 'approved'
+          )
+          || (
+            request.resource.data.role == 'staff'
+            && request.resource.data.status == 'pending'
+            && exists(/databases/$(database)/documents/restaurants/$(request.resource.data.restaurantId))
+          )
+        );
+
+      allow update: if (
+          isOwner(userId)
+          && request.resource.data.role == resource.data.role
+          && request.resource.data.status == resource.data.status
+          && request.resource.data.restaurantId == resource.data.restaurantId
+          && request.resource.data.restaurantCode == resource.data.restaurantCode
+        )
+        || (
+          isAdmin()
+          && resource.data.role == 'staff'
+          && resource.data.restaurantId == userDoc().restaurantId
+          && request.resource.data.role == 'staff'
+          && request.resource.data.restaurantId == resource.data.restaurantId
+          && request.resource.data.status in ['approved', 'rejected', 'deactivated', 'pending']
+        );
+
+      allow delete: if false;
+    }
+
+    match /costs/{docId} {
+      allow read, write: if isAdmin()
+        && resource.data.restaurantId == userDoc().restaurantId;
+      allow create: if isAdmin()
+        && request.resource.data.restaurantId == userDoc().restaurantId;
+    }
+
+    match /analytics/{docId} {
+      allow read, write: if isAdmin()
+        && resource.data.restaurantId == userDoc().restaurantId;
+      allow create: if isAdmin()
+        && request.resource.data.restaurantId == userDoc().restaurantId;
+    }
+
+    match /financialSummaries/{docId} {
+      allow read, write: if isAdmin()
+        && resource.data.restaurantId == userDoc().restaurantId;
+      allow create: if isAdmin()
+        && request.resource.data.restaurantId == userDoc().restaurantId;
+    }
+
+    // Inventory batches (FR-011–FR-020)
+    match /inventoryBatches/{docId} {
+      allow read: if isApproved()
+        && resource.data.restaurantId == userDoc().restaurantId;
+
+      allow create: if isApproved()
+        && request.resource.data.restaurantId == userDoc().restaurantId
+        && request.resource.data.ingredientName is string
+        && request.resource.data.quantity is number
+        && request.resource.data.quantity > 0
+        && request.resource.data.unitCost is number
+        && request.resource.data.unitCost >= 0
+        && request.resource.data.consumed == false
+        && request.resource.data.archived == false
+        && request.resource.data.createdBy == request.auth.uid;
+
+      // Staff/admin can update same-restaurant batches.
+      // Only admins may change the archived flag (FR-019).
+      allow update: if isApproved()
+        && resource.data.restaurantId == userDoc().restaurantId
+        && request.resource.data.restaurantId == resource.data.restaurantId
+        && request.resource.data.ingredientName == resource.data.ingredientName
+        && request.resource.data.unitCost == resource.data.unitCost
+        && request.resource.data.unit == resource.data.unit
+        && request.resource.data.dateReceived == resource.data.dateReceived
+        && request.resource.data.createdBy == resource.data.createdBy
+        && (
+          isAdmin()
+          || request.resource.data.archived == resource.data.archived
+        );
+
+      // Soft-delete only — never hard delete
+      allow delete: if false;
+    }
+
+    match /auditLogs/{docId} {
+      allow read: if isAdmin()
+        && resource.data.restaurantId == userDoc().restaurantId;
+      allow create: if isApproved()
+        && request.resource.data.restaurantId == userDoc().restaurantId
+        && request.resource.data.userId == request.auth.uid
+        && request.resource.data.action in [
+          'batch_created',
+          'batch_edited',
+          'batch_consumed',
+          'batch_archived'
+        ];
+      allow update, delete: if false;
+    }
+
+    match /waste/{docId} {
+      allow read: if isApproved() && resource.data.restaurantId == userDoc().restaurantId;
+      allow create: if isApproved()
+        && request.resource.data.restaurantId == userDoc().restaurantId;
+      allow update, delete: if isApproved()
+        && resource.data.restaurantId == userDoc().restaurantId;
+    }
+
+    match /notifications/{docId} {
+      allow read: if isSignedIn() && resource.data.userId == request.auth.uid;
+      allow create: if isAdmin()
+        && request.resource.data.restaurantId == userDoc().restaurantId;
+      allow update: if isSignedIn() && resource.data.userId == request.auth.uid;
+      allow delete: if false;
+    }
+
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

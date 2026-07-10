@@ -1,0 +1,17 @@
+export const routes = {
+  login: '/(auth)/login',
+  adminRegister: '/(auth)/admin-register',
+  staffRegister: '/(auth)/staff-register',
+  forgotPassword: '/(auth)/forgot-password',
+  pending: '/(auth)/pending',
+  rejected: '/(auth)/rejected',
+  adminHome: '/(admin)/(tabs)',
+  adminStaff: '/(admin)/staff',
+  adminAnalytics: '/(admin)/(tabs)/analytics',
+  adminCost: '/(admin)/cost',
+  adminInventory: '/(admin)/(tabs)/inventory',
+  adminAddBatch: '/(admin)/add-batch',
+  staffHome: '/(staff)/(tabs)',
+  staffInventory: '/(staff)/(tabs)/inventory',
+  staffAddBatch: '/(staff)/add-batch',
+} as const;

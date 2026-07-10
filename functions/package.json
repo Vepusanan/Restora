@@ -1,0 +1,24 @@
+{
+  "name": "restora-functions",
+  "private": true,
+  "main": "lib/index.js",
+  "engines": {
+    "node": "20 || 22"
+  },
+  "scripts": {
+    "build": "tsc",
+    "build:watch": "tsc --watch",
+    "serve": "npm run build && firebase emulators:start --only functions",
+    "deploy": "firebase deploy --only functions",
+    "lint": "tsc --noEmit",
+    "test": "node --test lib/**/*.test.js"
+  },
+  "dependencies": {
+    "@google/generative-ai": "^0.24.1",
+    "firebase-admin": "^13.0.0",
+    "firebase-functions": "^6.3.0"
+  },
+  "devDependencies": {
+    "typescript": "~5.9.2"
+  }
+}
