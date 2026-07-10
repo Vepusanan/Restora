@@ -111,24 +111,32 @@ service cloud.firestore {
     }
 
     match /costs/{docId} {
-      allow read, write: if isAdmin()
+      // FR-035 — admin-only financial collection
+      allow read: if isAdmin()
         && resource.data.restaurantId == userDoc().restaurantId;
       allow create: if isAdmin()
         && request.resource.data.restaurantId == userDoc().restaurantId;
+      allow update: if isAdmin()
+        && resource.data.restaurantId == userDoc().restaurantId
+        && request.resource.data.restaurantId == resource.data.restaurantId;
+      allow delete: if false;
     }
 
     match /analytics/{docId} {
-      allow read, write: if isAdmin()
+      allow read: if isAdmin()
         && resource.data.restaurantId == userDoc().restaurantId;
       allow create: if isAdmin()
         && request.resource.data.restaurantId == userDoc().restaurantId;
+      allow update: if isAdmin()
+        && resource.data.restaurantId == userDoc().restaurantId
+        && request.resource.data.restaurantId == resource.data.restaurantId;
+      allow delete: if false;
     }
 
-    match /financialSummaries/{docId} {
-      allow read, write: if isAdmin()
-        && resource.data.restaurantId == userDoc().restaurantId;
-      allow create: if isAdmin()
-        && request.resource.data.restaurantId == userDoc().restaurantId;
+    // FR-035 — financial summaries are admin-read; clients cannot write (no tampering).
+    match /financialSummaries/{restaurantId} {
+      allow read: if isAdmin() && sameRestaurant(restaurantId);
+      allow create, update, delete: if false;
     }
 
     // Inventory batches (FR-011–FR-020)

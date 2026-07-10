@@ -23,7 +23,7 @@ type Props = {
 
 export function WasteScreen({ basePath }: Props) {
   const router = useRouter();
-  const { profile } = useAuth();
+  const { profile, isAdmin } = useAuth();
   const { filtered, summary, loggers, loading, error, filters, setFilters } = useWasteLogs(
     profile?.restaurantId,
   );
@@ -50,16 +50,25 @@ export function WasteScreen({ basePath }: Props) {
             {profile?.restaurantName ?? 'Restaurant'} · {summary.activeEvents} active events
           </Text>
 
-          <View style={styles.summaryRow}>
-            <View style={styles.summaryCard}>
-              <Text style={styles.summaryLabel}>Active loss</Text>
-              <Text style={styles.summaryValue}>{formatCostLoss(summary.totalCostLoss)}</Text>
+          {isAdmin ? (
+            <View style={styles.summaryRow}>
+              <View style={styles.summaryCard}>
+                <Text style={styles.summaryLabel}>Active loss</Text>
+                <Text style={styles.summaryValue}>{formatCostLoss(summary.totalCostLoss)}</Text>
+              </View>
+              <View style={styles.summaryCard}>
+                <Text style={styles.summaryLabel}>Qty wasted</Text>
+                <Text style={styles.summaryValue}>{summary.quantityWasted}</Text>
+              </View>
             </View>
-            <View style={styles.summaryCard}>
-              <Text style={styles.summaryLabel}>Qty wasted</Text>
-              <Text style={styles.summaryValue}>{summary.quantityWasted}</Text>
+          ) : (
+            <View style={styles.summaryRow}>
+              <View style={styles.summaryCard}>
+                <Text style={styles.summaryLabel}>Qty wasted</Text>
+                <Text style={styles.summaryValue}>{summary.quantityWasted}</Text>
+              </View>
             </View>
-          </View>
+          )}
 
           <View style={styles.actions}>
             <View style={styles.actionGrow}>
@@ -95,6 +104,7 @@ export function WasteScreen({ basePath }: Props) {
       renderItem={({ item }) => (
         <WasteCard
           log={item}
+          showFinancials={isAdmin}
           onPress={() => router.push(`${basePath}/waste-entry/${item.id}` as never)}
         />
       )}

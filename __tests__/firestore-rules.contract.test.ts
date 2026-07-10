@@ -8,11 +8,10 @@
  * FR-006 Deactivated staff inventory read → denied
  * FR-008 Staff costs/analytics read → denied; admin → allowed
  * FR-007 Unauthenticated users/{id} read → denied
- * FR-026–031 Waste management:
- *   - Approved staff/admin can create wasteLogs with server-validated costLoss
- *   - Staff cannot void; admin can void once
- *   - Hard delete denied
- *   - Cross-restaurant access denied
+ * FR-032–035 Cost tracking:
+ *   - costs / analytics / financialSummaries admin-only
+ *   - Staff financialSummaries read → permission-denied
+ *   - Clients cannot write financialSummaries
  */
 describe('firestore rules contract', () => {
   it('documents the required security outcomes', () => {
@@ -30,7 +29,9 @@ describe('firestore rules contract', () => {
       'staff-can-create-waste-logs',
       'admin-only-void-waste',
       'waste-hard-delete-denied',
+      'staff-blocked-from-financial-summaries',
+      'clients-cannot-write-financial-summaries',
     ];
-    expect(outcomes).toHaveLength(13);
+    expect(outcomes).toHaveLength(15);
   });
 });

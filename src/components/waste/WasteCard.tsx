@@ -6,9 +6,11 @@ import type { WasteLog } from '@/types';
 type Props = {
   log: WasteLog;
   onPress: () => void;
+  /** FR-035 — hide cost amounts from staff */
+  showFinancials?: boolean;
 };
 
-export function WasteCard({ log, onPress }: Props) {
+export function WasteCard({ log, onPress, showFinancials = false }: Props) {
   return (
     <Pressable
       onPress={onPress}
@@ -27,7 +29,8 @@ export function WasteCard({ log, onPress }: Props) {
         {log.quantityWasted} {log.unit} · {log.wasteReason}
       </Text>
       <Text style={styles.meta}>
-        Loss {formatCostLoss(log.costLoss)} · {log.loggedByName || 'Unknown'}
+        {showFinancials ? `Loss ${formatCostLoss(log.costLoss)} · ` : ''}
+        {log.loggedByName || 'Unknown'}
       </Text>
       <Text style={styles.meta}>{log.timestamp.slice(0, 19).replace('T', ' ')}</Text>
     </Pressable>

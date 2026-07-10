@@ -24,7 +24,11 @@ export default function AdminDashboardScreen() {
       </View>
 
       <Button title="Manage staff" onPress={() => router.push('/(admin)/staff')} />
-      <Button title="Cost overview" variant="secondary" onPress={() => router.push('/(admin)/cost')} />
+      <Button
+        title="Cost & expense"
+        variant="secondary"
+        onPress={() => router.push('/(admin)/cost')}
+      />
       <Button title="Sign out" variant="ghost" onPress={() => void logout()} loading={status === 'loading'} />
     </View>
   );

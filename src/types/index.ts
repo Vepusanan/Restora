@@ -39,6 +39,15 @@ export type {
   WasteSummary,
 } from './waste';
 
+export type {
+  IngredientCostRow,
+  WasteLossRow,
+  InventoryValuationResult,
+  IngredientCostResult,
+  WasteLossResult,
+  FinancialDateRange,
+} from './financial';
+
 export type AiGenerateRequest = {
   prompt: string;
 };

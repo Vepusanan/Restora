@@ -22,7 +22,7 @@ type Props = {
 export function LogWasteForm({ basePath }: Props) {
   const router = useRouter();
   const params = useLocalSearchParams<{ batchId?: string }>();
-  const { user, profile } = useAuth();
+  const { user, profile, isAdmin } = useAuth();
   const { batches, loading: inventoryLoading } = useInventory(profile?.restaurantId);
 
   const activeBatches = useMemo(
@@ -84,7 +84,9 @@ export function LogWasteForm({ basePath }: Props) {
       });
       Alert.alert(
         'Waste logged',
-        `Recorded ${parsed.data.quantityWasted} ${selected?.unit ?? ''} · Loss ${formatCostLoss(result.costLoss)}`,
+        isAdmin
+          ? `Recorded ${parsed.data.quantityWasted} ${selected?.unit ?? ''} · Loss ${formatCostLoss(result.costLoss)}`
+          : `Recorded ${parsed.data.quantityWasted} ${selected?.unit ?? ''} as ${parsed.data.wasteReason}.`,
       );
       router.replace(`${basePath}/waste-entry/${result.wasteLogId}` as never);
     } catch (err) {
@@ -134,7 +136,9 @@ export function LogWasteForm({ basePath }: Props) {
             <Text style={styles.meta}>
               Remaining: {selected.quantity} {selected.unit}
             </Text>
-            <Text style={styles.meta}>Unit cost: {formatCostLoss(selected.unitCost)}</Text>
+            {isAdmin ? (
+              <Text style={styles.meta}>Unit cost: {formatCostLoss(selected.unitCost)}</Text>
+            ) : null}
             <Text style={styles.meta}>Received: {selected.dateReceived}</Text>
           </View>
         ) : null}
@@ -156,11 +160,11 @@ export function LogWasteForm({ basePath }: Props) {
           error={fieldErrors.wasteReason}
         />
 
-        {previewLoss > 0 ? (
+        {isAdmin && previewLoss > 0 ? (
           <View style={styles.preview}>
             <Text style={styles.previewTitle}>Estimated cost loss</Text>
             <Text style={styles.loss}>{formatCostLoss(previewLoss)}</Text>
-            <Text style={styles.meta}>Final value is calculated on the server.</Text>
+            <Text style={styles.meta}>Final value is calculated on submit.</Text>
           </View>
         ) : null}
 

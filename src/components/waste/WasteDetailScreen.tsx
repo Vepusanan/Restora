@@ -80,8 +80,12 @@ export function WasteDetailScreen({ basePath }: Props) {
             {log.quantityWasted} {log.unit}
           </Text>
           <Text style={styles.meta}>Reason: {log.wasteReason}</Text>
-          <Text style={styles.meta}>Unit cost: {formatCostLoss(log.unitCost)}</Text>
-          <Text style={styles.loss}>Cost loss: {formatCostLoss(log.costLoss)}</Text>
+          {isAdmin ? (
+            <>
+              <Text style={styles.meta}>Unit cost: {formatCostLoss(log.unitCost)}</Text>
+              <Text style={styles.loss}>Cost loss: {formatCostLoss(log.costLoss)}</Text>
+            </>
+          ) : null}
           <Text style={styles.meta}>Logged by: {log.loggedByName || log.loggedBy}</Text>
           <Text style={styles.meta}>
             Timestamp: {log.timestamp.slice(0, 19).replace('T', ' ')}
