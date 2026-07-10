@@ -45,6 +45,13 @@ export default function AdminTabsLayout() {
           tabBarLabel: ({ color }) => <TabLabel label="Analytics" color={color} />,
         }}
       />
+      <Tabs.Screen
+        name="ai"
+        options={{
+          title: 'AI Assistant',
+          tabBarLabel: ({ color }) => <TabLabel label="AI" color={color} />,
+        }}
+      />
     </Tabs>
   );
 }

@@ -5,6 +5,7 @@ initializeApp();
 setGlobalOptions({ maxInstances: 20 });
 
 export { generateContent } from './gemini/generateContent';
+export { askAiAssistant } from './ai/askAiAssistant';
 export { deactivateStaff } from './auth/deactivateStaff';
 export { evaluateInventoryExpiry } from './expiry/evaluateInventoryExpiry';
 export { cleanupInvalidFCMTokens } from './messaging/cleanupInvalidFCMTokens';

@@ -37,6 +37,7 @@ yarn-error.*
 .env.*
 !.env.example
 functions/.env
+server/.env
 functions/.runtimeconfig.json
 **/serviceAccount*.json
 **/google-services.json

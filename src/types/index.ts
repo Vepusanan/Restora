@@ -57,6 +57,15 @@ export type {
   AnalyticsDashboardSnapshot,
 } from './analytics';
 
+export type {
+  AiChatRole,
+  AiChatMessage,
+  AiHistoryItem,
+  AiAskResponse,
+} from './ai';
+
+export { AI_HISTORY_LIMIT, AI_REQUEST_TIMEOUT_MS } from './ai';
+
 export type AiGenerateRequest = {
   prompt: string;
 };

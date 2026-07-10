@@ -21,6 +21,9 @@ const AUTH_MESSAGES: Record<string, string> = {
   'functions/invalid-argument': 'Invalid request. Check your details and try again.',
   'functions/resource-exhausted': 'Too many requests. Please wait and try again.',
   'functions/failed-precondition': 'Unable to complete this action right now.',
+  'resource-exhausted':
+    'Gemini API quota exceeded. Wait for reset or add a new GEMINI_API_KEY in server/.env.',
+  'deadline-exceeded': 'AI Assistant is currently unavailable. Please try again.',
   'restora/invalid-restaurant-code': 'Invalid restaurant code. Check with your admin.',
   'restora/restaurant-not-found': 'No restaurant found for that code.',
   'restora/account-pending': 'Your account is waiting for admin approval.',

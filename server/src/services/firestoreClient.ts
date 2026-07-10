@@ -1,0 +1,169 @@
+import { serverEnv } from '../config';
+
+type FirestoreDocument = {
+  name?: string;
+  fields?: Record<string, FirestoreValue>;
+};
+
+type FirestoreValue = {
+  stringValue?: string;
+  integerValue?: string;
+  doubleValue?: number;
+  booleanValue?: boolean;
+  timestampValue?: string;
+  nullValue?: null;
+  mapValue?: { fields?: Record<string, FirestoreValue> };
+  arrayValue?: { values?: FirestoreValue[] };
+};
+
+type ListResponse = {
+  documents?: FirestoreDocument[];
+  nextPageToken?: string;
+};
+
+function docIdFromName(name?: string): string {
+  if (!name) return '';
+  const parts = name.split('/');
+  return parts[parts.length - 1] || '';
+}
+
+function readString(fields: Record<string, FirestoreValue> | undefined, key: string): string {
+  return fields?.[key]?.stringValue ?? '';
+}
+
+function readNumber(fields: Record<string, FirestoreValue> | undefined, key: string): number {
+  const value = fields?.[key];
+  if (!value) return 0;
+  if (typeof value.doubleValue === 'number') return value.doubleValue;
+  if (value.integerValue != null) return Number(value.integerValue);
+  return 0;
+}
+
+function readBoolean(fields: Record<string, FirestoreValue> | undefined, key: string): boolean {
+  return Boolean(fields?.[key]?.booleanValue);
+}
+
+async function firestoreGet(
+  idToken: string,
+  path: string,
+): Promise<FirestoreDocument | null> {
+  const url = `https://firestore.googleapis.com/v1/projects/${serverEnv.firebaseProjectId}/databases/(default)/documents/${path}`;
+  const response = await fetch(url, {
+    headers: { Authorization: `Bearer ${idToken}` },
+  });
+  if (response.status === 404) return null;
+  if (!response.ok) {
+    const body = await response.text();
+    throw new Error(`Firestore get failed (${response.status}): ${body}`);
+  }
+  return (await response.json()) as FirestoreDocument;
+}
+
+async function firestoreRunQuery(
+  idToken: string,
+  collectionId: string,
+  field: string,
+  op: string,
+  value: string,
+  limit = 100,
+): Promise<FirestoreDocument[]> {
+  const url = `https://firestore.googleapis.com/v1/projects/${serverEnv.firebaseProjectId}/databases/(default)/documents:runQuery`;
+  const response = await fetch(url, {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${idToken}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      structuredQuery: {
+        from: [{ collectionId }],
+        where: {
+          fieldFilter: {
+            field: { fieldPath: field },
+            op,
+            value: { stringValue: value },
+          },
+        },
+        limit,
+      },
+    }),
+  });
+
+  if (!response.ok) {
+    const body = await response.text();
+    throw new Error(`Firestore query failed (${response.status}): ${body}`);
+  }
+
+  const rows = (await response.json()) as Array<{ document?: FirestoreDocument }>;
+  return rows.map((row) => row.document).filter(Boolean) as FirestoreDocument[];
+}
+
+export const firestoreUserApi = {
+  async getUserProfile(idToken: string, uid: string) {
+    const doc = await firestoreGet(idToken, `users/${uid}`);
+    if (!doc?.fields) return null;
+    return {
+      uid,
+      role: (readString(doc.fields, 'role') || 'staff') as 'admin' | 'staff',
+      status: readString(doc.fields, 'status'),
+      restaurantId: readString(doc.fields, 'restaurantId'),
+      restaurantName: readString(doc.fields, 'restaurantName'),
+      displayName: readString(doc.fields, 'displayName'),
+    };
+  },
+
+  async listInventory(idToken: string, restaurantId: string) {
+    const docs = await firestoreRunQuery(
+      idToken,
+      'inventoryBatches',
+      'restaurantId',
+      'EQUAL',
+      restaurantId,
+      120,
+    );
+    return docs.map((doc) => {
+      const fields = doc.fields || {};
+      return {
+        id: docIdFromName(doc.name),
+        ingredientName: readString(fields, 'ingredientName'),
+        quantity: readNumber(fields, 'quantity'),
+        unit: readString(fields, 'unit'),
+        unitCost: readNumber(fields, 'unitCost'),
+        expiryDate: readString(fields, 'expiryDate').slice(0, 10),
+        dateReceived: readString(fields, 'dateReceived').slice(0, 10),
+        consumed: readBoolean(fields, 'consumed'),
+        archived: readBoolean(fields, 'archived'),
+      };
+    });
+  },
+
+  async listWaste(idToken: string, restaurantId: string) {
+    const docs = await firestoreRunQuery(
+      idToken,
+      'wasteLogs',
+      'restaurantId',
+      'EQUAL',
+      restaurantId,
+      120,
+    );
+    return docs.map((doc) => {
+      const fields = doc.fields || {};
+      const timestamp =
+        fields.timestamp?.timestampValue ||
+        fields.createdAt?.timestampValue ||
+        '';
+      return {
+        id: docIdFromName(doc.name),
+        ingredientName: readString(fields, 'ingredientName'),
+        quantityWasted: readNumber(fields, 'quantityWasted'),
+        unit: readString(fields, 'unit'),
+        wasteReason: readString(fields, 'wasteReason'),
+        costLoss: readNumber(fields, 'costLoss'),
+        voided: readBoolean(fields, 'voided'),
+        date: String(timestamp).slice(0, 10),
+      };
+    });
+  },
+};
+
+export type { ListResponse };

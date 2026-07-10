@@ -44,6 +44,12 @@ export const env = {
     (process.env.EXPO_PUBLIC_USE_CALLABLE_FUNCTIONS ||
       fromExtra('EXPO_PUBLIC_USE_CALLABLE_FUNCTIONS') ||
       'false') === 'true',
+  /** Local/secure AI proxy base URL (never includes Gemini key). */
+  aiApiUrl: (
+    process.env.EXPO_PUBLIC_AI_API_URL ||
+    fromExtra('EXPO_PUBLIC_AI_API_URL') ||
+    'http://localhost:8787'
+  ).replace(/\/$/, ''),
 } as const;
 
 export function isFirebaseConfigured(): boolean {

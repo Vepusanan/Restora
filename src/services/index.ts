@@ -8,6 +8,8 @@ export { notificationService } from './notifications.service';
 export { wasteService } from './waste.service';
 export { financialService } from './financial.service';
 export { analyticsExportService } from './analytics-export.service';
+export { aiAssistantService } from './ai/ai-assistant.service';
+export { aiHistoryService } from './ai/ai-history.service';
 export { generateAIResponse } from './gemini/generateAIResponse';
 export { getFirebaseApp } from './firebase/config';
 export { getFirebaseAuth } from './firebase/auth';
