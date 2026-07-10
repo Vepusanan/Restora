@@ -188,20 +188,64 @@ service cloud.firestore {
           'threshold_updated',
           'waste_created',
           'waste_voided',
-          'inventory_restored'
+          'inventory_restored',
+          'device_registered',
+          'device_removed',
+          'notification_read',
+          'notification_opened'
         ];
       allow update, delete: if false;
     }
 
-    // User inbox — created only by Cloud Functions (Admin SDK).
-    match /notifications/{docId} {
-      allow read: if isSignedIn() && resource.data.userId == request.auth.uid;
-      allow create: if false;
-      allow update: if isSignedIn()
+    // FR-048 / FR-051 — per-device FCM registration (client-managed; Functions clean invalid).
+    match /deviceTokens/{docId} {
+      allow read: if isSignedIn()
+        && (resource.data.userId == request.auth.uid
+          || (isAdmin() && resource.data.restaurantId == userDoc().restaurantId));
+
+      allow create: if isApproved()
+        && request.resource.data.userId == request.auth.uid
+        && request.resource.data.restaurantId == userDoc().restaurantId
+        && request.resource.data.fcmToken is string
+        && request.resource.data.fcmToken.size() > 10
+        && request.resource.data.deviceId is string
+        && request.resource.data.platform in ['ios', 'android', 'web']
+        && request.resource.data.appVersion is string
+        && request.resource.data.active == true;
+
+      allow update: if isApproved()
         && resource.data.userId == request.auth.uid
         && request.resource.data.userId == resource.data.userId
+        && request.resource.data.restaurantId == resource.data.restaurantId
+        && request.resource.data.deviceId == resource.data.deviceId
+        && request.resource.data.fcmToken is string
+        && request.resource.data.platform in ['ios', 'android', 'web'];
+
+      allow delete: if isSignedIn()
+        && (resource.data.userId == request.auth.uid
+          || (isAdmin() && resource.data.restaurantId == userDoc().restaurantId));
+    }
+
+    // User inbox — created only by Cloud Functions (Admin SDK).
+    match /notifications/{docId} {
+      allow read: if isSignedIn()
+        && resource.data.userId == request.auth.uid
+        && resource.data.restaurantId == userDoc().restaurantId;
+
+      allow create: if false;
+
+      // Owner may mark read / append self to readBy only.
+      allow update: if isSignedIn()
+        && resource.data.userId == request.auth.uid
+        && resource.data.restaurantId == userDoc().restaurantId
+        && request.resource.data.userId == resource.data.userId
         && request.resource.data.batchId == resource.data.batchId
-        && request.resource.data.restaurantId == resource.data.restaurantId;
+        && request.resource.data.restaurantId == resource.data.restaurantId
+        && request.resource.data.title == resource.data.title
+        && request.resource.data.body == resource.data.body
+        && request.resource.data.read == true
+        && request.auth.uid in request.resource.data.readBy;
+
       allow delete: if false;
     }
 

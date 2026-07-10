@@ -5,11 +5,13 @@ import {
   getDoc,
   onSnapshot,
   serverTimestamp,
+  setDoc,
   updateDoc,
   type Unsubscribe,
 } from 'firebase/firestore';
 import { getDb } from './firebase/firestore';
 import { COLLECTIONS } from '@constants/auth';
+import { deviceTokenService } from './device-token.service';
 import { mapUserProfile } from '@utils/mappers';
 import { toServiceError } from '@utils/errors';
 import type { UserProfile } from '@/types';
@@ -38,6 +40,10 @@ export const userService = {
     );
   },
 
+  /**
+   * @deprecated Prefer deviceTokenService.register — retained for compatibility.
+   * Mirrors token onto users/{uid} for legacy Function readers.
+   */
   async registerFcmToken(uid: string, token: string): Promise<void> {
     if (!token.trim()) return;
     try {
@@ -54,11 +60,14 @@ export const userService = {
   async removeFcmToken(uid: string, token: string): Promise<void> {
     if (!token.trim()) return;
     try {
-      await updateDoc(doc(getDb(), COLLECTIONS.users, uid), {
-        fcmTokens: arrayRemove(token),
-        fcmToken: null,
-        updatedAt: serverTimestamp(),
-      });
+      await Promise.all([
+        updateDoc(doc(getDb(), COLLECTIONS.users, uid), {
+          fcmTokens: arrayRemove(token),
+          fcmToken: null,
+          updatedAt: serverTimestamp(),
+        }),
+        deviceTokenService.removeByFcmToken(token).catch(() => undefined),
+      ]);
     } catch (error) {
       throw toServiceError(error, 'Unable to remove push token');
     }

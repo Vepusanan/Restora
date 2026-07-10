@@ -117,8 +117,12 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   logout: async () => {
     set({ status: 'loading', error: null });
     try {
+      // FR-051 — remove this device token before signing out.
+      const { deviceTokenService } = await import('@services/device-token.service');
+      await deviceTokenService.unregisterCurrent().catch(() => undefined);
       await authService.logout();
       get().clearSession();
+      set({ status: 'idle' });
     } catch (error) {
       set({ status: 'error', error: error as ServiceError });
       throw error;

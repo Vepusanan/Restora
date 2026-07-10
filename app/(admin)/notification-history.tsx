@@ -66,14 +66,15 @@ export default function NotificationHistoryScreen() {
             <Pressable
               style={[styles.card, !item.read && styles.unread]}
               onPress={() => {
-                void notificationService.markRead(item.id);
+                void notificationService.markRead(item.id, user?.uid ?? '', profile?.restaurantId);
                 router.push(`/(admin)/batch/${item.batchId}` as never);
               }}
             >
               <Text style={styles.cardTitle}>{item.title}</Text>
               <Text style={styles.body}>{item.body}</Text>
               <Text style={styles.meta}>
-                {item.status.toUpperCase()} · {item.ingredientName} · {item.expiryDate}
+                {(item.status ?? 'alert').toUpperCase()} · {item.ingredientName} ·{' '}
+                {item.expiryDate}
               </Text>
             </Pressable>
           )}

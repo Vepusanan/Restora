@@ -1,9 +1,10 @@
 import { useEffect, useRef } from 'react';
-import { Platform } from 'react-native';
+import { AppState, Platform, type AppStateStatus } from 'react-native';
 import * as Device from 'expo-device';
 import * as Notifications from 'expo-notifications';
 import { router } from 'expo-router';
-import { userService } from '@services/user.service';
+import { deviceTokenService } from '@services/device-token.service';
+import { notificationService } from '@services/notifications.service';
 import { useAuth } from '@hooks/useAuth';
 
 Notifications.setNotificationHandler({
@@ -32,51 +33,100 @@ async function resolveDevicePushToken(): Promise<string | null> {
     const requested = await Notifications.requestPermissionsAsync();
     status = requested.status;
   }
-  if (status !== 'granted') return null;
+  if (status !== 'granted') {
+    console.warn('Notification permission denied');
+    return null;
+  }
 
   if (Platform.OS === 'android') {
     await Notifications.setNotificationChannelAsync('expiry-alerts', {
       name: 'Expiry Alerts',
       importance: Notifications.AndroidImportance.HIGH,
     });
+    await Notifications.setNotificationChannelAsync('restora-alerts', {
+      name: 'Restora Alerts',
+      importance: Notifications.AndroidImportance.HIGH,
+    });
   }
 
-  // Native FCM/APNs device token for Admin SDK messaging.
-  const deviceToken = await Notifications.getDevicePushTokenAsync();
-  return typeof deviceToken.data === 'string' ? deviceToken.data : null;
+  try {
+    const deviceToken = await Notifications.getDevicePushTokenAsync();
+    return typeof deviceToken.data === 'string' ? deviceToken.data : null;
+  } catch (error) {
+    console.warn('FCM token refresh failed', error);
+    return null;
+  }
 }
 
 /**
- * Registers FCM device tokens for approved users and handles expiry deep links.
+ * FR-048 / FR-051 — registers FCM device tokens for approved users,
+ * refreshes on token change, and deep-links expiry taps.
  */
 export function usePushNotifications() {
   const { user, profile, isAdmin, isStaff } = useAuth();
-  const tokenRef = useRef<string | null>(null);
+  const registeredRef = useRef(false);
 
   useEffect(() => {
-    if (!user?.uid || profile?.status !== 'approved') return;
+    if (!user?.uid || !profile?.restaurantId || profile.status !== 'approved') {
+      registeredRef.current = false;
+      return;
+    }
 
     let cancelled = false;
+    let tokenSub: { remove: () => void } | null = null;
 
-    const register = async () => {
+    const register = async (token: string | null) => {
+      if (!token || cancelled) return;
       try {
-        const token = await resolveDevicePushToken();
-        if (!token || cancelled) return;
-        tokenRef.current = token;
-        await userService.registerFcmToken(user.uid, token);
+        const deviceId = await deviceTokenService.getOrCreateDeviceId();
+        const payload = deviceTokenService.buildRegistrationPayload({
+          userId: user.uid,
+          restaurantId: profile.restaurantId,
+          fcmToken: token,
+          deviceId,
+        });
+        const docId = await deviceTokenService.register(payload);
+        registeredRef.current = true;
+        await deviceTokenService.touchLastActive(docId);
       } catch (error) {
         console.warn('FCM registration skipped', error);
       }
     };
 
-    void register();
+    const bootstrap = async () => {
+      const token = await resolveDevicePushToken();
+      await register(token);
+    };
+
+    void bootstrap();
+
+    // FR-048 — automatically update Firestore when the OS rotates the token.
+    tokenSub = Notifications.addPushTokenListener((token) => {
+      const value = typeof token.data === 'string' ? token.data : null;
+      void register(value);
+    });
+
+    const onAppState = (state: AppStateStatus) => {
+      if (state !== 'active' || !registeredRef.current) return;
+      const active = deviceTokenService.getActiveRegistration();
+      if (active?.docId) {
+        void deviceTokenService.touchLastActive(active.docId);
+      }
+    };
+    const appSub = AppState.addEventListener('change', onAppState);
 
     const responseSub = Notifications.addNotificationResponseReceivedListener((response) => {
       const data = response.notification.request.content.data as Record<string, string>;
+      const notificationId = data?.notificationId;
+      if (notificationId && user.uid) {
+        void notificationService.markOpened(notificationId, user.uid, profile.restaurantId);
+        void notificationService.markRead(notificationId, user.uid, profile.restaurantId);
+      }
+
       const batchId = data?.batchId;
       if (!batchId) {
-        if (isAdmin) router.push('/(admin)/(tabs)/inventory');
-        else if (isStaff) router.push('/(staff)/(tabs)/inventory');
+        if (isAdmin) router.push('/(admin)/(tabs)/inbox');
+        else if (isStaff) router.push('/(staff)/(tabs)/inbox');
         return;
       }
       if (isAdmin) router.push(`/(admin)/batch/${batchId}`);
@@ -85,16 +135,9 @@ export function usePushNotifications() {
 
     return () => {
       cancelled = true;
+      tokenSub?.remove();
       responseSub.remove();
+      appSub.remove();
     };
-  }, [user?.uid, profile?.status, isAdmin, isStaff]);
-
-  useEffect(() => {
-    return () => {
-      // Token cleanup on logout is handled when profile clears; best-effort remove.
-      if (user?.uid && tokenRef.current) {
-        void userService.removeFcmToken(user.uid, tokenRef.current).catch(() => undefined);
-      }
-    };
-  }, [user?.uid]);
+  }, [user?.uid, profile?.restaurantId, profile?.status, isAdmin, isStaff]);
 }

@@ -4,6 +4,7 @@ export const COLLECTIONS = {
   restaurantCodes: 'restaurantCodes',
   notifications: 'notifications',
   notificationHistory: 'notificationHistory',
+  deviceTokens: 'deviceTokens',
   inventoryBatches: 'inventoryBatches',
   auditLogs: 'auditLogs',
   wasteLogs: 'wasteLogs',

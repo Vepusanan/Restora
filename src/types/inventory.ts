@@ -63,6 +63,11 @@ export type AuditAction =
   | 'expiry_detected'
   | 'notification_sent'
   | 'notification_failed'
+  | 'notification_delivered'
+  | 'notification_opened'
+  | 'notification_read'
+  | 'device_registered'
+  | 'device_removed'
   | 'waste_created'
   | 'waste_voided'
   | 'inventory_restored';
@@ -73,6 +78,8 @@ export type AuditLogEntry = {
   restaurantId: string;
   batchId: string;
   userId: string;
+  notificationId?: string | null;
+  deviceId?: string | null;
   timestamp: string;
   previousValues: Record<string, unknown> | null;
   newValues: Record<string, unknown> | null;

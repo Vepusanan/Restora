@@ -9,5 +9,6 @@ export { askAiAssistant } from './ai/askAiAssistant';
 export { deactivateStaff } from './auth/deactivateStaff';
 export { evaluateInventoryExpiry } from './expiry/evaluateInventoryExpiry';
 export { cleanupInvalidFCMTokens } from './messaging/cleanupInvalidFCMTokens';
+export { sendRestaurantNotification } from './messaging/sendRestaurantNotification';
 export { createWasteLog } from './waste/createWasteLog';
 export { voidWasteEntry } from './waste/voidWasteEntry';

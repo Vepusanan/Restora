@@ -11,7 +11,12 @@ import {
   shouldSuppressDuplicate,
   type ExpiryTone,
 } from '../utils/expiry';
-import { removeInvalidTokens, sendExpiryPush } from '../messaging/pushService';
+import {
+  loadRestaurantDeviceTokens,
+  removeInvalidTokens,
+  sendRestaurantPush,
+} from '../messaging/pushService';
+import { createInboxNotifications } from '../messaging/createNotificationDocument';
 
 type BatchDoc = {
   restaurantId: string;
@@ -77,23 +82,8 @@ export const evaluateInventoryExpiry = onSchedule(
 
       if (batchesSnap.empty) continue;
 
-      const usersSnap = await db
-        .collection('users')
-        .where('restaurantId', '==', restaurantId)
-        .where('status', '==', 'approved')
-        .get();
-
-      const userTokenMap = new Map<string, string[]>();
-      for (const userDoc of usersSnap.docs) {
-        const data = userDoc.data();
-        const tokens = Array.isArray(data.fcmTokens)
-          ? data.fcmTokens.map(String).filter(Boolean)
-          : [];
-        if (data.fcmToken && !tokens.includes(String(data.fcmToken))) {
-          tokens.push(String(data.fcmToken));
-        }
-        if (tokens.length > 0) userTokenMap.set(userDoc.id, tokens);
-      }
+      const { tokens: allTokens, userTokenMap, userIds } =
+        await loadRestaurantDeviceTokens(restaurantId);
 
       for (const batchDoc of batchesSnap.docs) {
         evaluated += 1;
@@ -173,8 +163,7 @@ export const evaluateInventoryExpiry = onSchedule(
           daysRemaining: String(daysRemaining),
         };
 
-        const allTokens = Array.from(userTokenMap.values()).flat();
-        const pushResult = await sendExpiryPush({
+        const pushResult = await sendRestaurantPush({
           tokens: allTokens,
           title: copy.title,
           body: copy.body,
@@ -201,28 +190,36 @@ export const evaluateInventoryExpiry = onSchedule(
           body: copy.body,
         });
 
-        await Promise.all(
-          usersSnap.docs.map((userDoc) =>
-            db.collection('notifications').add({
-              restaurantId,
-              userId: userDoc.id,
-              batchId: batchDoc.id,
-              ingredientName: data.ingredientName,
-              quantity: data.quantity,
-              unit: data.unit,
-              dateReceived: toDateOnly(data.dateReceived),
-              expiryDate,
-              daysRemaining,
-              status: nextTone,
-              title: copy.title,
-              body: copy.body,
-              read: false,
-              deepLink,
-              historyId: historyRef.id,
-              createdAt: FieldValue.serverTimestamp(),
-            }),
-          ),
-        );
+        await createInboxNotifications({
+          restaurantId,
+          userIds,
+          batchId: batchDoc.id,
+          type: 'expiry',
+          priority: nextTone === 'red' ? 'high' : 'normal',
+          title: copy.title,
+          body: copy.body,
+          deepLink,
+          historyId: historyRef.id,
+          createdBy: 'system',
+          metadata: {
+            status: nextTone,
+            ingredientName: data.ingredientName,
+            quantity: data.quantity,
+            unit: data.unit,
+            dateReceived: toDateOnly(data.dateReceived),
+            expiryDate,
+            daysRemaining,
+          },
+          expiryFields: {
+            ingredientName: String(data.ingredientName ?? ''),
+            quantity: Number(data.quantity ?? 0),
+            unit: String(data.unit ?? ''),
+            dateReceived: toDateOnly(data.dateReceived),
+            expiryDate,
+            daysRemaining,
+            status: nextTone,
+          },
+        });
 
         await db.collection('auditLogs').add({
           action:

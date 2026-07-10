@@ -61,6 +61,24 @@ export const deactivateStaff = onCall(
       updatedAt: FieldValue.serverTimestamp(),
     });
 
+    const deviceSnap = await db
+      .collection('deviceTokens')
+      .where('userId', '==', staffUid)
+      .get();
+    await Promise.all(deviceSnap.docs.map((d) => d.ref.delete()));
+
+    await db.collection('auditLogs').add({
+      action: 'device_removed',
+      restaurantId: admin.restaurantId,
+      batchId: '',
+      userId: request.auth.uid,
+      deviceId: null,
+      notificationId: null,
+      previousValues: { staffUid },
+      newValues: { reason: 'staff_deactivated', devicesRemoved: deviceSnap.size },
+      timestamp: FieldValue.serverTimestamp(),
+    });
+
     await getAuth().revokeRefreshTokens(staffUid);
 
     return { ok: true };

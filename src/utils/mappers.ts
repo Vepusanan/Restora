@@ -1,6 +1,7 @@
 import type { DocumentData, Timestamp } from 'firebase/firestore';
 import type {
   AppNotification,
+  DeviceToken,
   ExpiryTone,
   InventoryBatch,
   InventoryUnit,
@@ -15,6 +16,7 @@ import type {
 } from '@/types';
 import { EXPIRY_AMBER_DAYS } from '@constants/inventory';
 import { clampExpiryThreshold, ingredientKey, normalizeIngredientName } from '@utils/expiry';
+import { resolveNotificationType } from '@utils/notifications';
 import { calculateCostLoss } from '@utils/waste';
 
 export function toIso(value: unknown): string {
@@ -127,6 +129,12 @@ export function mapInventoryBatch(id: string, data: DocumentData): InventoryBatc
 }
 
 export function mapAppNotification(id: string, data: DocumentData): AppNotification {
+  const readBy = Array.isArray(data.readBy)
+    ? data.readBy.map(String).filter(Boolean)
+    : [];
+  const status =
+    data.status === 'red' ? 'red' : data.status === 'amber' ? 'amber' : null;
+
   return {
     id,
     restaurantId: String(data.restaurantId ?? ''),
@@ -138,12 +146,46 @@ export function mapAppNotification(id: string, data: DocumentData): AppNotificat
     dateReceived: toDateOnly(data.dateReceived),
     expiryDate: toDateOnly(data.expiryDate),
     daysRemaining: Number(data.daysRemaining ?? 0),
-    status: data.status === 'red' ? 'red' : 'amber',
+    status,
+    type: resolveNotificationType(data.type, data.status),
+    priority:
+      data.priority === 'low' ||
+      data.priority === 'high' ||
+      data.priority === 'critical'
+        ? data.priority
+        : 'normal',
     title: String(data.title ?? ''),
     body: String(data.body ?? ''),
     read: Boolean(data.read),
+    readBy,
     deepLink: String(data.deepLink ?? 'restora://inventory'),
+    createdBy: String(data.createdBy ?? 'system'),
+    metadata:
+      data.metadata && typeof data.metadata === 'object'
+        ? (data.metadata as Record<string, unknown>)
+        : {},
     createdAt: toIso(data.createdAt),
+  };
+}
+
+export function mapDeviceToken(id: string, data: DocumentData): DeviceToken {
+  const platform =
+    data.platform === 'ios' || data.platform === 'android' || data.platform === 'web'
+      ? data.platform
+      : 'android';
+
+  return {
+    id,
+    userId: String(data.userId ?? ''),
+    restaurantId: String(data.restaurantId ?? ''),
+    fcmToken: String(data.fcmToken ?? ''),
+    deviceId: String(data.deviceId ?? ''),
+    platform,
+    appVersion: String(data.appVersion ?? '1.0.0'),
+    active: data.active !== false,
+    createdAt: toIso(data.createdAt),
+    updatedAt: toIso(data.updatedAt),
+    lastActiveAt: toIso(data.lastActiveAt),
   };
 }
 

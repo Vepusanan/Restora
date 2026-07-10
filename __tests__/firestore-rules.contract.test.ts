@@ -32,7 +32,12 @@ describe('firestore rules contract', () => {
       'clients-cannot-write-financial-summaries',
       'staff-blocked-from-analytics',
       'clients-cannot-write-analytics',
+      'deviceTokens-owner-only-write',
+      'deviceTokens-restaurant-isolation',
+      'notifications-owner-read-only',
+      'notifications-create-denied-to-clients',
+      'notifications-mark-read-self-only',
     ];
-    expect(outcomes).toHaveLength(17);
+    expect(outcomes).toHaveLength(22);
   });
 });

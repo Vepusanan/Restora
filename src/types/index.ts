@@ -28,6 +28,13 @@ export type {
   AppNotification,
   NotificationHistoryEntry,
   ExpiryEvaluationFields,
+  NotificationType,
+  NotificationPriority,
+  DevicePlatform,
+  DeviceToken,
+  NotificationTypeFilter,
+  NotificationInboxFilters,
+  RegisterDeviceTokenInput,
 } from './notifications';
 
 export type {

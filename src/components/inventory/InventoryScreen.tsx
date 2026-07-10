@@ -86,7 +86,7 @@ export function InventoryScreen({ basePath }: Props) {
               <Button
                 title="Alerts"
                 variant="ghost"
-                onPress={() => router.push('/(admin)/notification-history' as never)}
+                onPress={() => router.push('/(admin)/(tabs)/inbox' as never)}
               />
             </View>
           </View>
