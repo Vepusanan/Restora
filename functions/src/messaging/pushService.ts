@@ -136,14 +136,42 @@ export async function removeInvalidTokens(
 
 /**
  * Load all active FCM tokens for a restaurant (deviceTokens preferred, users fallback).
+ * FR-057 — optionally filter by notification preferences and expiry tone.
  */
-export async function loadRestaurantDeviceTokens(restaurantId: string): Promise<{
+export async function loadRestaurantDeviceTokens(
+  restaurantId: string,
+  options?: { tone?: 'amber' | 'red' },
+): Promise<{
   tokens: string[];
   userTokenMap: Map<string, string[]>;
   userIds: string[];
 }> {
   const db = getFirestore();
   const userTokenMap = new Map<string, string[]>();
+
+  const usersSnap = await db
+    .collection('users')
+    .where('restaurantId', '==', restaurantId)
+    .where('status', '==', 'approved')
+    .get();
+
+  const eligibleUserIds = new Set<string>();
+  for (const userDoc of usersSnap.docs) {
+    const data = userDoc.data();
+    const prefs = (data.notificationPrefs ?? {}) as {
+      pushEnabled?: boolean;
+      amberAlertsEnabled?: boolean;
+      redAlertsEnabled?: boolean;
+    };
+
+    const pushEnabled = prefs.pushEnabled !== false;
+    if (!pushEnabled) continue;
+
+    if (options?.tone === 'amber' && prefs.amberAlertsEnabled === false) continue;
+    if (options?.tone === 'red' && prefs.redAlertsEnabled === false) continue;
+
+    eligibleUserIds.add(userDoc.id);
+  }
 
   const deviceSnap = await db
     .collection('deviceTokens')
@@ -156,19 +184,15 @@ export async function loadRestaurantDeviceTokens(restaurantId: string): Promise<
     const uid = String(data.userId ?? '');
     const token = String(data.fcmToken ?? '');
     if (!uid || !token) continue;
+    if (!eligibleUserIds.has(uid)) continue;
     const existing = userTokenMap.get(uid) ?? [];
     if (!existing.includes(token)) existing.push(token);
     userTokenMap.set(uid, existing);
   }
 
   // Legacy fallback — users.fcmTokens for devices not yet migrated.
-  const usersSnap = await db
-    .collection('users')
-    .where('restaurantId', '==', restaurantId)
-    .where('status', '==', 'approved')
-    .get();
-
   for (const userDoc of usersSnap.docs) {
+    if (!eligibleUserIds.has(userDoc.id)) continue;
     const data = userDoc.data();
     const tokens = Array.isArray(data.fcmTokens)
       ? data.fcmTokens.map(String).filter(Boolean)
@@ -188,6 +212,6 @@ export async function loadRestaurantDeviceTokens(restaurantId: string): Promise<
   return {
     tokens,
     userTokenMap,
-    userIds: usersSnap.docs.map((d) => d.id),
+    userIds: Array.from(eligibleUserIds),
   };
 }

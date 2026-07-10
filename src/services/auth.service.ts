@@ -123,6 +123,8 @@ export const authService = {
         code: restaurantCode,
         ownerId: createdUser.uid,
         expiryAlertThreshold: EXPIRY_AMBER_DAYS,
+        currency: 'USD',
+        updatedBy: createdUser.uid,
         createdAt: serverTimestamp(),
         updatedAt: serverTimestamp(),
       });
@@ -139,6 +141,7 @@ export const authService = {
         uid: createdUser.uid,
         email: input.email.trim().toLowerCase(),
         displayName: input.displayName.trim(),
+        phoneNumber: '',
         role: 'admin',
         status: 'approved',
         restaurantId: restaurantRef.id,
@@ -148,6 +151,12 @@ export const authService = {
         photoURL,
         fcmToken: null,
         fcmTokens: [],
+        notificationPrefs: {
+          pushEnabled: true,
+          amberAlertsEnabled: true,
+          redAlertsEnabled: true,
+          updatedAt: new Date().toISOString(),
+        },
         createdAt: serverTimestamp(),
         updatedAt: serverTimestamp(),
       });
@@ -200,6 +209,7 @@ export const authService = {
         uid: createdUser.uid,
         email: input.email.trim().toLowerCase(),
         displayName: input.displayName.trim(),
+        phoneNumber: '',
         role: 'staff',
         status: 'pending',
         restaurantId: restaurant.id,
@@ -209,6 +219,12 @@ export const authService = {
         photoURL,
         fcmToken: null,
         fcmTokens: [],
+        notificationPrefs: {
+          pushEnabled: true,
+          amberAlertsEnabled: true,
+          redAlertsEnabled: true,
+          updatedAt: new Date().toISOString(),
+        },
         createdAt: serverTimestamp(),
         updatedAt: serverTimestamp(),
       });

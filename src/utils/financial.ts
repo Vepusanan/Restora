@@ -11,10 +11,15 @@ import type {
   WasteReason,
 } from '@/types';
 
-/** Display currency consistently with the rest of the app. */
-export function formatMoney(value: number): string {
+/** Display currency consistently with restaurant settings (FR-056). */
+export function formatMoney(
+  value: number,
+  currency: import('@/types').RestaurantCurrency | string = 'USD',
+): string {
   const amount = Number.isFinite(value) ? value : 0;
-  return `$${amount.toFixed(2)}`;
+  const symbols: Record<string, string> = { LKR: 'Rs.', USD: '$', EUR: '€' };
+  const symbol = symbols[currency] ?? '$';
+  return `${symbol}${amount.toFixed(2)}`;
 }
 
 function inDateRange(dateOnly: string, range: FinancialDateRange): boolean {

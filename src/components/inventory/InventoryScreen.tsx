@@ -79,7 +79,7 @@ export function InventoryScreen({ basePath }: Props) {
               <Button
                 title="Expiry settings"
                 variant="ghost"
-                onPress={() => router.push('/(admin)/inventory-settings' as never)}
+                onPress={() => router.push('/(admin)/restaurant-settings' as never)}
               />
             </View>
             <View style={styles.actionGrow}>

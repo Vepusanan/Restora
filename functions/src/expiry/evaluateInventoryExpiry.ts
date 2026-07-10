@@ -17,6 +17,7 @@ import {
   sendRestaurantPush,
 } from '../messaging/pushService';
 import { createInboxNotifications } from '../messaging/createNotificationDocument';
+import { writeAuditLog } from '../audit/writeAuditLog';
 
 type BatchDoc = {
   restaurantId: string;
@@ -82,9 +83,6 @@ export const evaluateInventoryExpiry = onSchedule(
 
       if (batchesSnap.empty) continue;
 
-      const { tokens: allTokens, userTokenMap, userIds } =
-        await loadRestaurantDeviceTokens(restaurantId);
-
       for (const batchDoc of batchesSnap.docs) {
         evaluated += 1;
         const data = batchDoc.data() as BatchDoc;
@@ -106,8 +104,10 @@ export const evaluateInventoryExpiry = onSchedule(
           lastEvaluatedAt: FieldValue.serverTimestamp(),
         };
 
-        if (!shouldNotify) {
-          await batchDoc.ref.update(basePatch);
+        if (!shouldNotify || (nextTone !== 'amber' && nextTone !== 'red')) {
+          if (toneChanged) {
+            await batchDoc.ref.update(basePatch);
+          }
           continue;
         }
 
@@ -120,14 +120,15 @@ export const evaluateInventoryExpiry = onSchedule(
           now,
         });
 
-        await db.collection('auditLogs').add({
+        await writeAuditLog({
           action: 'expiry_detected',
           restaurantId,
           batchId: batchDoc.id,
-          userId: 'system',
-          previousValues: { evaluatedTone: previousTone },
-          newValues: { status: nextTone, daysRemaining, suppressed: suppress },
-          timestamp: FieldValue.serverTimestamp(),
+          targetCollection: 'inventoryBatches',
+          targetDocumentId: batchDoc.id,
+          targetName: String(data.ingredientName ?? ''),
+          before: { evaluatedTone: previousTone },
+          after: { status: nextTone, daysRemaining, suppressed: suppress },
         });
 
         if (suppress) {
@@ -162,6 +163,10 @@ export const evaluateInventoryExpiry = onSchedule(
           expiryDate,
           daysRemaining: String(daysRemaining),
         };
+
+        // FR-057 — only deliver to users who opted into this tone.
+        const { tokens: allTokens, userTokenMap, userIds } =
+          await loadRestaurantDeviceTokens(restaurantId, { tone: nextTone });
 
         const pushResult = await sendRestaurantPush({
           tokens: allTokens,
@@ -221,22 +226,23 @@ export const evaluateInventoryExpiry = onSchedule(
           },
         });
 
-        await db.collection('auditLogs').add({
+        await writeAuditLog({
           action:
             pushResult.failureCount > 0 && pushResult.successCount === 0
               ? 'notification_failed'
               : 'notification_sent',
           restaurantId,
           batchId: batchDoc.id,
-          userId: 'system',
-          previousValues: { evaluatedTone: previousTone },
-          newValues: {
+          targetCollection: 'notifications',
+          targetDocumentId: historyRef.id,
+          targetName: String(data.ingredientName ?? ''),
+          before: { evaluatedTone: previousTone },
+          after: {
             status: nextTone,
             historyId: historyRef.id,
             successCount: pushResult.successCount,
             failureCount: pushResult.failureCount,
           },
-          timestamp: FieldValue.serverTimestamp(),
         });
 
         await batchDoc.ref.update({

@@ -6,12 +6,14 @@ import { FinancialAccessDenied } from '@components/financial/FinancialAccessDeni
 import { Button } from '@components/ui/Button';
 import { useFinancialDashboard } from '@hooks/useFinancialDashboard';
 import { useAuth } from '@hooks/useAuth';
+import { useRestaurantSettings } from '@hooks/useRestaurantSettings';
 import { colors, spacing } from '@constants/theme';
 import { formatMoney } from '@utils/financial';
 
 export function CostDashboardScreen() {
   const router = useRouter();
   const { profile } = useAuth();
+  const { currency } = useRestaurantSettings(profile?.restaurantId);
   const {
     allowed,
     loading,
@@ -49,6 +51,7 @@ export function CostDashboardScreen() {
           excludedExpired={valuation.excludedExpired}
           excludedConsumed={valuation.excludedConsumed}
           excludedArchived={valuation.excludedArchived}
+          currency={currency}
         />
 
         <View style={styles.summaryRow}>
@@ -57,7 +60,7 @@ export function CostDashboardScreen() {
             onPress={() => router.push('/(admin)/ingredient-cost')}
           >
             <Text style={styles.summaryLabel}>Ingredient cost (MTD)</Text>
-            <Text style={styles.summaryValue}>{formatMoney(ingredientCost.totalCost)}</Text>
+            <Text style={styles.summaryValue}>{formatMoney(ingredientCost.totalCost, currency)}</Text>
             <Text style={styles.link}>Open analysis →</Text>
           </Pressable>
           <Pressable
@@ -66,7 +69,7 @@ export function CostDashboardScreen() {
           >
             <Text style={styles.summaryLabel}>Waste loss (MTD)</Text>
             <Text style={[styles.summaryValue, styles.danger]}>
-              {formatMoney(wasteLoss.totalLoss)}
+              {formatMoney(wasteLoss.totalLoss, currency)}
             </Text>
             <Text style={styles.link}>Open analysis →</Text>
           </Pressable>

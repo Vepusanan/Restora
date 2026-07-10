@@ -11,9 +11,10 @@ type Card = {
 type Props = {
   cards: Card[];
   lastUpdated: string;
+  currency?: string;
 };
 
-export function AnalyticsSummaryCards({ cards, lastUpdated }: Props) {
+export function AnalyticsSummaryCards({ cards, lastUpdated, currency = 'USD' }: Props) {
   return (
     <View style={styles.wrap}>
       <View style={styles.row}>
@@ -27,7 +28,7 @@ export function AnalyticsSummaryCards({ cards, lastUpdated }: Props) {
                 card.tone === 'primary' && styles.primary,
               ]}
             >
-              {formatMoney(card.value)}
+              {formatMoney(card.value, currency)}
             </Text>
           </View>
         ))}

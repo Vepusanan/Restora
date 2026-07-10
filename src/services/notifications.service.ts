@@ -1,5 +1,4 @@
 import {
-  addDoc,
   arrayUnion,
   collection,
   doc,
@@ -27,33 +26,11 @@ import {
   notificationRetentionCutoff,
 } from '@utils/notifications';
 import { toServiceError } from '@utils/errors';
+import { auditService } from './audit.service';
 import type { AppNotification, NotificationHistoryEntry } from '@/types';
 
 function withinRetention(items: AppNotification[]): AppNotification[] {
   return items.filter((item) => isWithinNotificationRetention(item.createdAt));
-}
-
-async function writeNotificationAudit(input: {
-  action: 'notification_read' | 'notification_opened';
-  userId: string;
-  notificationId: string;
-  restaurantId?: string;
-}): Promise<void> {
-  try {
-    await addDoc(collection(getDb(), COLLECTIONS.auditLogs), {
-      action: input.action,
-      restaurantId: input.restaurantId ?? '',
-      batchId: '',
-      userId: input.userId,
-      notificationId: input.notificationId,
-      deviceId: null,
-      previousValues: null,
-      newValues: { action: input.action },
-      timestamp: serverTimestamp(),
-    });
-  } catch {
-    // Audit is best-effort; inbox UX must not fail if rules block the write.
-  }
 }
 
 /**
@@ -158,12 +135,20 @@ export const notificationService = {
         readBy: arrayUnion(userId),
         updatedAt: serverTimestamp(),
       });
-      await writeNotificationAudit({
-        action: 'notification_read',
-        userId,
-        notificationId,
-        restaurantId,
-      });
+      if (restaurantId) {
+        await auditService.writeSafe({
+          action: 'notification_read',
+          restaurantId,
+          userId,
+          notificationId,
+          target: {
+            collection: 'notifications',
+            documentId: notificationId,
+          },
+          before: { read: false },
+          after: { read: true },
+        });
+      }
     } catch (error) {
       throw toServiceError(error, 'Unable to update notification');
     }
@@ -195,6 +180,24 @@ export const notificationService = {
       }
 
       if (ops > 0) await pending.commit();
+
+      const restaurantId = unread[0]?.restaurantId;
+      if (restaurantId) {
+        await auditService.writeSafe({
+          action: 'notification_read',
+          restaurantId,
+          userId,
+          target: {
+            collection: 'notifications',
+            documentId: 'bulk',
+            name: `${total} notifications`,
+          },
+          before: { unread: total },
+          after: { unread: 0 },
+          metadata: { bulk: true, count: total },
+        });
+      }
+
       return total;
     } catch (error) {
       throw toServiceError(error, 'Unable to mark notifications as read');
@@ -206,11 +209,18 @@ export const notificationService = {
     userId: string,
     restaurantId?: string,
   ): Promise<void> {
-    await writeNotificationAudit({
+    if (!restaurantId) return;
+    await auditService.writeSafe({
       action: 'notification_opened',
+      restaurantId,
       userId,
       notificationId,
-      restaurantId,
+      target: {
+        collection: 'notifications',
+        documentId: notificationId,
+      },
+      before: null,
+      after: { opened: true },
     });
   },
 };

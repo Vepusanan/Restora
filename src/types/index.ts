@@ -16,13 +16,23 @@ export type {
   InventoryBatch,
   CreateBatchInput,
   EditBatchInput,
-  AuditAction,
-  AuditLogEntry,
   InventoryVisibilityFilter,
   InventorySortKey,
   InventoryFilters,
   IngredientGroup,
 } from './inventory';
+
+export type {
+  AuditAction,
+  AuditActionType,
+  AuditModule,
+  AuditActor,
+  AuditTarget,
+  AuditLogEntry,
+  WriteAuditInput,
+  AuditSortOrder,
+  AuditFilters,
+} from './audit';
 
 export type {
   AppNotification,
@@ -72,6 +82,20 @@ export type {
 } from './ai';
 
 export { AI_HISTORY_LIMIT, AI_REQUEST_TIMEOUT_MS } from './ai';
+
+export type {
+  RestaurantCurrency,
+  NotificationPreferences,
+  UpdateProfileInput,
+  UpdateRestaurantSettingsInput,
+  UpdateNotificationPreferencesInput,
+} from './settings';
+
+export {
+  DEFAULT_NOTIFICATION_PREFERENCES,
+  SUPPORTED_CURRENCIES,
+  CURRENCY_SYMBOLS,
+} from './settings';
 
 export type AiGenerateRequest = {
   prompt: string;

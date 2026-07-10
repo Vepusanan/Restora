@@ -30,6 +30,7 @@ export function AuthProvider({ children }: Props) {
   const profile = useAuthStore((s) => s.profile);
 
   const loggingOutRef = useRef(false);
+  const loginAuditedRef = useRef<string | null>(null);
 
   useEffect(() => {
     if (!isFirebaseConfigured()) {
@@ -41,6 +42,7 @@ export function AuthProvider({ children }: Props) {
       setUser(nextUser);
       if (!nextUser) {
         setProfile(null);
+        loginAuditedRef.current = null;
       }
     });
 
@@ -75,6 +77,33 @@ export function AuthProvider({ children }: Props) {
       }
 
       setProfile(nextProfile);
+
+      // FR-053 — one login audit per approved session.
+      if (
+        nextProfile.status === 'approved' &&
+        loginAuditedRef.current !== nextProfile.uid
+      ) {
+        loginAuditedRef.current = nextProfile.uid;
+        void import('@services/audit.service').then(({ auditService }) =>
+          auditService.writeSafe({
+            action: 'user_login',
+            restaurantId: nextProfile.restaurantId,
+            userId: nextProfile.uid,
+            actor: {
+              id: nextProfile.uid,
+              name: nextProfile.displayName,
+              role: nextProfile.role,
+            },
+            target: {
+              collection: 'users',
+              documentId: nextProfile.uid,
+              name: nextProfile.displayName,
+            },
+            before: null,
+            after: { signedIn: true, status: nextProfile.status },
+          }),
+        );
+      }
     });
 
     return unsubscribe;

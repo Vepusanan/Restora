@@ -67,16 +67,19 @@ export const deactivateStaff = onCall(
       .get();
     await Promise.all(deviceSnap.docs.map((d) => d.ref.delete()));
 
-    await db.collection('auditLogs').add({
-      action: 'device_removed',
+    const { writeAuditLog } = await import('../audit/writeAuditLog');
+    await writeAuditLog({
+      action: 'staff_deactivated',
       restaurantId: admin.restaurantId,
-      batchId: '',
-      userId: request.auth.uid,
-      deviceId: null,
-      notificationId: null,
-      previousValues: { staffUid },
-      newValues: { reason: 'staff_deactivated', devicesRemoved: deviceSnap.size },
-      timestamp: FieldValue.serverTimestamp(),
+      actorId: request.auth.uid,
+      actorName: String(admin.displayName ?? 'Admin'),
+      actorRole: 'admin',
+      targetCollection: 'users',
+      targetDocumentId: staffUid,
+      targetName: String(staff.displayName ?? staffUid),
+      before: { status: staff.status },
+      after: { status: 'deactivated', devicesRemoved: deviceSnap.size },
+      metadata: { via: 'deactivateStaff' },
     });
 
     await getAuth().revokeRefreshTokens(staffUid);

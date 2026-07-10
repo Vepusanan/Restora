@@ -18,6 +18,7 @@ import { mapWasteLog } from '@utils/mappers';
 import { createServiceError, toServiceError } from '@utils/errors';
 import { createWasteSchema } from '@utils/validators';
 import { calculateCostLoss } from '@utils/waste';
+import { auditService } from './audit.service';
 import type { CreateWasteInput, WasteLog } from '@/types';
 
 function canFallbackToFirestore(error: { code: string; message: string }): boolean {
@@ -112,21 +113,28 @@ async function createWasteViaTransaction(input: {
       lastModifiedBy: input.userId,
     });
 
-    tx.set(auditRef, {
-      action: 'waste_created',
-      restaurantId: input.restaurantId,
-      batchId: parsed.data.batchId,
-      wasteLogId: wasteRef.id,
-      userId: input.userId,
-      previousValues: { quantity: remaining },
-      newValues: {
-        quantity: nextQuantity,
-        quantityWasted,
-        wasteReason: parsed.data.wasteReason,
-        costLoss,
-      },
-      timestamp: now,
-    });
+    tx.set(
+      auditRef,
+      auditService.buildRecord({
+        action: 'waste_created',
+        restaurantId: input.restaurantId,
+        userId: input.userId,
+        batchId: parsed.data.batchId,
+        wasteLogId: wasteRef.id,
+        target: {
+          collection: 'wasteLogs',
+          documentId: wasteRef.id,
+          name: String(batch.ingredientName ?? ''),
+        },
+        before: { quantity: remaining },
+        after: {
+          quantity: nextQuantity,
+          quantityWasted,
+          wasteReason: parsed.data.wasteReason,
+          costLoss,
+        },
+      }),
+    );
 
     return {
       wasteLogId: wasteRef.id,
@@ -188,27 +196,41 @@ async function voidWasteViaTransaction(input: {
       lastModifiedBy: input.userId,
     });
 
-    tx.set(auditRef, {
-      action: 'waste_voided',
-      restaurantId: input.restaurantId,
-      batchId: String(waste.batchId),
-      wasteLogId: input.wasteLogId,
-      userId: input.userId,
-      previousValues: { voided: false, quantity: previousQuantity },
-      newValues: { voided: true, quantity: nextQuantity },
-      timestamp: now,
-    });
+    tx.set(
+      auditRef,
+      auditService.buildRecord({
+        action: 'waste_voided',
+        restaurantId: input.restaurantId,
+        userId: input.userId,
+        batchId: String(waste.batchId),
+        wasteLogId: input.wasteLogId,
+        target: {
+          collection: 'wasteLogs',
+          documentId: input.wasteLogId,
+          name: String(waste.ingredientName ?? ''),
+        },
+        before: { voided: false, quantity: previousQuantity },
+        after: { voided: true, quantity: nextQuantity },
+      }),
+    );
 
-    tx.set(restoreAuditRef, {
-      action: 'inventory_restored',
-      restaurantId: input.restaurantId,
-      batchId: String(waste.batchId),
-      wasteLogId: input.wasteLogId,
-      userId: input.userId,
-      previousValues: { quantity: previousQuantity },
-      newValues: { quantity: nextQuantity, restored: quantityWasted },
-      timestamp: now,
-    });
+    tx.set(
+      restoreAuditRef,
+      auditService.buildRecord({
+        action: 'inventory_restored',
+        restaurantId: input.restaurantId,
+        userId: input.userId,
+        batchId: String(waste.batchId),
+        wasteLogId: input.wasteLogId,
+        target: {
+          collection: 'inventoryBatches',
+          documentId: String(waste.batchId),
+          name: String(waste.ingredientName ?? ''),
+        },
+        before: { quantity: previousQuantity },
+        after: { quantity: nextQuantity, restored: quantityWasted },
+      }),
+    );
 
     return {
       wasteLogId: input.wasteLogId,

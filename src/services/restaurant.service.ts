@@ -1,6 +1,4 @@
 import {
-  addDoc,
-  collection,
   doc,
   getDoc,
   onSnapshot,
@@ -15,8 +13,14 @@ import { mapRestaurant } from '@utils/mappers';
 import { clampExpiryThreshold } from '@utils/expiry';
 import { createServiceError, toServiceError } from '@utils/errors';
 import { normalizeRestaurantCode } from '@utils/restaurantCode';
-import type { Restaurant } from '@/types';
+import {
+  normalizeCurrency,
+  validateRestaurantName,
+} from '@utils/settings';
+import type { Restaurant, UpdateRestaurantSettingsInput } from '@/types';
 import { getFirebaseAuth } from './firebase/auth';
+import { auditService } from './audit.service';
+import { SUPPORTED_CURRENCIES } from '@/types';
 
 export const restaurantService = {
   async findByCode(code: string): Promise<Restaurant | null> {
@@ -35,6 +39,8 @@ export const restaurantService = {
         code: String(data.code ?? normalized),
         ownerId: String(data.ownerId ?? ''),
         expiryAlertThreshold: EXPIRY_AMBER_DAYS,
+        currency: 'USD',
+        updatedBy: null,
         createdAt: '',
         updatedAt: '',
       };
@@ -81,8 +87,34 @@ export const restaurantService = {
   },
 
   async updateExpiryThreshold(restaurantId: string, threshold: number): Promise<void> {
-    const value = clampExpiryThreshold(threshold);
-    if (value < 1 || value > 30) {
+    const previous = await this.getById(restaurantId);
+    if (!previous) {
+      throw createServiceError('restora/not-found', 'Restaurant not found');
+    }
+    await this.updateSettings(restaurantId, {
+      name: previous.name,
+      currency: previous.currency,
+      expiryAlertThreshold: threshold,
+    });
+  },
+
+  /**
+   * FR-056 — admin restaurant settings (name, currency, amber threshold).
+   */
+  async updateSettings(
+    restaurantId: string,
+    input: UpdateRestaurantSettingsInput,
+  ): Promise<void> {
+    const nameError = validateRestaurantName(input.name);
+    if (nameError) throw createServiceError('restora/validation', nameError);
+
+    const currency = normalizeCurrency(input.currency);
+    if (!SUPPORTED_CURRENCIES.includes(currency)) {
+      throw createServiceError('restora/validation', 'Select a supported currency.');
+    }
+
+    const threshold = clampExpiryThreshold(input.expiryAlertThreshold);
+    if (threshold < 1 || threshold > 30) {
       throw createServiceError(
         'restora/invalid-threshold',
         'Expiry alert threshold must be between 1 and 30 days.',
@@ -91,25 +123,58 @@ export const restaurantService = {
 
     try {
       const previous = await this.getById(restaurantId);
+      if (!previous) {
+        throw createServiceError('restora/not-found', 'Restaurant not found');
+      }
+
+      const uid = getFirebaseAuth().currentUser?.uid ?? 'unknown';
+      const name = input.name.trim();
+
       await updateDoc(doc(getDb(), COLLECTIONS.restaurants, restaurantId), {
-        expiryAlertThreshold: value,
+        name,
+        currency,
+        expiryAlertThreshold: threshold,
+        updatedBy: uid,
         updatedAt: serverTimestamp(),
       });
 
-      const uid = getFirebaseAuth().currentUser?.uid ?? 'unknown';
-      await addDoc(collection(getDb(), COLLECTIONS.auditLogs), {
-        action: 'threshold_updated',
+      // Keep restaurantCodes display name in sync for staff registration lookups.
+      if (previous.code) {
+        await updateDoc(doc(getDb(), COLLECTIONS.restaurantCodes, previous.code), {
+          name,
+        }).catch(() => undefined);
+      }
+
+      // Sync denormalized restaurantName on the admin's own profile if they own it.
+      if (uid !== 'unknown') {
+        await updateDoc(doc(getDb(), COLLECTIONS.users, uid), {
+          restaurantName: name,
+          updatedAt: serverTimestamp(),
+        }).catch(() => undefined);
+      }
+
+      await auditService.writeSafe({
+        action: 'restaurant_settings_updated',
         restaurantId,
-        batchId: '',
         userId: uid,
-        previousValues: {
-          expiryAlertThreshold: previous?.expiryAlertThreshold ?? EXPIRY_AMBER_DAYS,
+        target: {
+          collection: 'restaurants',
+          documentId: restaurantId,
+          name,
         },
-        newValues: { expiryAlertThreshold: value },
-        timestamp: serverTimestamp(),
+        before: {
+          name: previous.name,
+          currency: previous.currency,
+          expiryAlertThreshold: previous.expiryAlertThreshold,
+        },
+        after: {
+          name,
+          currency,
+          expiryAlertThreshold: threshold,
+        },
       });
     } catch (error) {
-      throw toServiceError(error, 'Unable to update expiry settings');
+      throw toServiceError(error, 'Unable to update restaurant settings');
     }
   },
 };

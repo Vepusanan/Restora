@@ -13,35 +13,16 @@ import {
 } from 'firebase/firestore';
 import { getDb } from './firebase/firestore';
 import { COLLECTIONS } from '@constants/auth';
+import { auditService } from './audit.service';
 import { mapInventoryBatch } from '@utils/mappers';
 import { createServiceError, toServiceError } from '@utils/errors';
 import { ingredientKey, normalizeIngredientName } from '@utils/expiry';
 import { createBatchSchema, editBatchSchema } from '@utils/validators';
 import type {
-  AuditAction,
   CreateBatchInput,
   EditBatchInput,
   InventoryBatch,
 } from '@/types';
-
-async function writeAuditLog(input: {
-  action: AuditAction;
-  restaurantId: string;
-  batchId: string;
-  userId: string;
-  previousValues: Record<string, unknown> | null;
-  newValues: Record<string, unknown> | null;
-}): Promise<void> {
-  await addDoc(collection(getDb(), COLLECTIONS.auditLogs), {
-    action: input.action,
-    restaurantId: input.restaurantId,
-    batchId: input.batchId,
-    userId: input.userId,
-    previousValues: input.previousValues,
-    newValues: input.newValues,
-    timestamp: serverTimestamp(),
-  });
-}
 
 function snapshotFields(batch: InventoryBatch): Record<string, unknown> {
   return {
@@ -147,13 +128,18 @@ export const inventoryService = {
         lastEvaluatedAt: null,
       });
 
-      await writeAuditLog({
+      await auditService.writeSafe({
         action: 'batch_created',
         restaurantId: input.restaurantId,
-        batchId: ref.id,
         userId: input.userId,
-        previousValues: null,
-        newValues: {
+        batchId: ref.id,
+        target: {
+          collection: 'inventoryBatches',
+          documentId: ref.id,
+          name,
+        },
+        before: null,
+        after: {
           ingredientName: name,
           quantity: data.quantity,
           unit: data.unit,
@@ -207,13 +193,18 @@ export const inventoryService = {
         lastModifiedBy: input.userId,
       });
 
-      await writeAuditLog({
+      await auditService.writeSafe({
         action: 'batch_edited',
         restaurantId: current.restaurantId,
-        batchId: current.id,
         userId: input.userId,
-        previousValues: snapshotFields(current),
-        newValues: {
+        batchId: current.id,
+        target: {
+          collection: 'inventoryBatches',
+          documentId: current.id,
+          name: current.ingredientName,
+        },
+        before: snapshotFields(current),
+        after: {
           ...snapshotFields(current),
           supplier: next.supplier.trim(),
           quantity: next.quantity,
@@ -249,13 +240,18 @@ export const inventoryService = {
         lastModifiedBy: input.userId,
       });
 
-      await writeAuditLog({
+      await auditService.writeSafe({
         action: 'batch_consumed',
         restaurantId: current.restaurantId,
-        batchId: current.id,
         userId: input.userId,
-        previousValues: snapshotFields(current),
-        newValues: { ...snapshotFields(current), consumed: true },
+        batchId: current.id,
+        target: {
+          collection: 'inventoryBatches',
+          documentId: current.id,
+          name: current.ingredientName,
+        },
+        before: snapshotFields(current),
+        after: { ...snapshotFields(current), consumed: true },
       });
     } catch (error) {
       throw toServiceError(error, 'Unable to mark batch as consumed');
@@ -281,13 +277,18 @@ export const inventoryService = {
         lastModifiedBy: input.userId,
       });
 
-      await writeAuditLog({
+      await auditService.writeSafe({
         action: 'batch_archived',
         restaurantId: current.restaurantId,
-        batchId: current.id,
         userId: input.userId,
-        previousValues: snapshotFields(current),
-        newValues: { ...snapshotFields(current), archived: true },
+        batchId: current.id,
+        target: {
+          collection: 'inventoryBatches',
+          documentId: current.id,
+          name: current.ingredientName,
+        },
+        before: snapshotFields(current),
+        after: { ...snapshotFields(current), archived: true },
       });
     } catch (error) {
       throw toServiceError(error, 'Unable to archive batch');

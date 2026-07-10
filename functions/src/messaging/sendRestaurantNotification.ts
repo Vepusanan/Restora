@@ -1,5 +1,5 @@
 import { HttpsError, onCall } from 'firebase-functions/v2/https';
-import { FieldValue, getFirestore } from 'firebase-admin/firestore';
+import { getFirestore } from 'firebase-admin/firestore';
 import { logger } from 'firebase-functions';
 import {
   loadRestaurantDeviceTokens,
@@ -7,6 +7,7 @@ import {
   sendRestaurantPush,
 } from './pushService';
 import { createInboxNotifications, type NotificationPriority, type NotificationType } from './createNotificationDocument';
+import { writeAuditLog } from '../audit/writeAuditLog';
 
 type SendRequest = {
   restaurantId?: string;
@@ -91,25 +92,27 @@ export const sendRestaurantNotification = onCall(
       });
     }
 
-    await db.collection('auditLogs').add({
+    await writeAuditLog({
       action:
         pushResult.failureCount > 0 && pushResult.successCount === 0
           ? 'notification_failed'
           : 'notification_sent',
       restaurantId,
+      actorId: request.auth.uid,
+      actorName: String(admin.displayName ?? 'Admin'),
+      actorRole: 'admin',
       batchId: data.batchId ?? '',
-      userId: request.auth.uid,
       notificationId: inboxIds[0] ?? null,
-      deviceId: null,
-      previousValues: null,
-      newValues: {
+      targetCollection: 'notifications',
+      targetDocumentId: inboxIds[0] ?? '',
+      before: null,
+      after: {
         successCount: pushResult.successCount,
         failureCount: pushResult.failureCount,
         recipientCount: tokens.length,
         inboxCount: inboxIds.length,
         type,
       },
-      timestamp: FieldValue.serverTimestamp(),
     });
 
     logger.info('sendRestaurantNotification complete', {

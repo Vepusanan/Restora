@@ -56,12 +56,15 @@ service cloud.firestore {
         && request.resource.data.ownerId == request.auth.uid
         && request.resource.data.name is string
         && request.resource.data.code is string;
-      // Admin may update expiryAlertThreshold (FR-025); core identity fields stay immutable.
+      // FR-056 — admin may update name, currency, expiryAlertThreshold; code/owner immutable.
       allow update: if isAdmin()
         && sameRestaurant(restaurantId)
-        && request.resource.data.name == resource.data.name
         && request.resource.data.code == resource.data.code
         && request.resource.data.ownerId == resource.data.ownerId
+        && request.resource.data.name is string
+        && request.resource.data.name.size() >= 2
+        && request.resource.data.name.size() <= 100
+        && request.resource.data.currency in ['LKR', 'USD', 'EUR']
         && request.resource.data.expiryAlertThreshold is int
         && request.resource.data.expiryAlertThreshold >= 1
         && request.resource.data.expiryAlertThreshold <= 30;
@@ -97,6 +100,8 @@ service cloud.firestore {
           && request.resource.data.status == resource.data.status
           && request.resource.data.restaurantId == resource.data.restaurantId
           && request.resource.data.restaurantCode == resource.data.restaurantCode
+          && request.resource.data.email == resource.data.email
+          && request.resource.data.uid == resource.data.uid
         )
         || (
           isAdmin()
@@ -108,6 +113,17 @@ service cloud.firestore {
         );
 
       allow delete: if false;
+
+      // FR-057 — notification preferences subcollection
+      match /settings/{settingsId} {
+        allow read: if isOwner(userId);
+        allow create, update: if isOwner(userId)
+          && settingsId == 'notifications'
+          && request.resource.data.pushEnabled is bool
+          && request.resource.data.amberAlertsEnabled is bool
+          && request.resource.data.redAlertsEnabled is bool;
+        allow delete: if false;
+      }
     }
 
     match /costs/{docId} {
@@ -192,8 +208,20 @@ service cloud.firestore {
           'device_registered',
           'device_removed',
           'notification_read',
-          'notification_opened'
-        ];
+          'notification_opened',
+          'staff_approved',
+          'staff_rejected',
+          'staff_deactivated',
+          'user_login',
+          'user_logout',
+          'analytics_exported',
+          'profile_updated',
+          'profile_photo_updated',
+          'restaurant_settings_updated',
+          'notification_prefs_updated'
+        ]
+        && request.resource.data.actorId == request.auth.uid
+        && request.resource.data.userId == request.auth.uid;
       allow update, delete: if false;
     }
 

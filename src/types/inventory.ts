@@ -54,37 +54,6 @@ export type EditBatchInput = {
   expiryDate: string;
 };
 
-export type AuditAction =
-  | 'batch_created'
-  | 'batch_edited'
-  | 'batch_consumed'
-  | 'batch_archived'
-  | 'threshold_updated'
-  | 'expiry_detected'
-  | 'notification_sent'
-  | 'notification_failed'
-  | 'notification_delivered'
-  | 'notification_opened'
-  | 'notification_read'
-  | 'device_registered'
-  | 'device_removed'
-  | 'waste_created'
-  | 'waste_voided'
-  | 'inventory_restored';
-
-export type AuditLogEntry = {
-  id: string;
-  action: AuditAction;
-  restaurantId: string;
-  batchId: string;
-  userId: string;
-  notificationId?: string | null;
-  deviceId?: string | null;
-  timestamp: string;
-  previousValues: Record<string, unknown> | null;
-  newValues: Record<string, unknown> | null;
-};
-
 export type InventoryVisibilityFilter =
   | 'active'
   | 'consumed'

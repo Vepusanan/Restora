@@ -4,6 +4,8 @@ import * as Print from 'expo-print';
 import * as Sharing from 'expo-sharing';
 import { buildAnalyticsCsv, buildAnalyticsPdfHtml } from '@utils/export';
 import { createServiceError, toServiceError } from '@utils/errors';
+import { auditService } from './audit.service';
+import { useAuthStore } from '@store/authStore';
 import type { AnalyticsDashboardSnapshot, AnalyticsExportFormat } from '@/types';
 
 function fileSafeName(value: string): string {
@@ -41,6 +43,18 @@ export const analyticsExportService = {
           throw createServiceError('restora/export-unavailable', 'Sharing is not available on this device.');
         }
 
+        await auditService.writeSafe({
+          action: 'analytics_exported',
+          restaurantId: useAuthStore.getState().profile?.restaurantId ?? '',
+          target: {
+            collection: 'analytics',
+            documentId: useAuthStore.getState().profile?.restaurantId ?? '',
+            name: snapshot.restaurantName,
+          },
+          before: null,
+          after: { format: 'csv', generatedAt: snapshot.generatedAt },
+        });
+
         return { uri: fileUri, format };
       }
 
@@ -58,6 +72,18 @@ export const analyticsExportService = {
       } else {
         await Print.printAsync({ html });
       }
+
+      await auditService.writeSafe({
+        action: 'analytics_exported',
+        restaurantId: useAuthStore.getState().profile?.restaurantId ?? '',
+        target: {
+          collection: 'analytics',
+          documentId: useAuthStore.getState().profile?.restaurantId ?? '',
+          name: snapshot.restaurantName,
+        },
+        before: null,
+        after: { format: 'pdf', generatedAt: snapshot.generatedAt },
+      });
 
       return { uri: targetUri, format: 'pdf' };
     } catch (error) {

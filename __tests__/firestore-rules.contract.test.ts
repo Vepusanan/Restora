@@ -37,7 +37,16 @@ describe('firestore rules contract', () => {
       'notifications-owner-read-only',
       'notifications-create-denied-to-clients',
       'notifications-mark-read-self-only',
+      'audit-admin-read-only',
+      'audit-staff-read-denied',
+      'audit-update-delete-denied',
+      'audit-create-allowlist-enforced',
+      'profile-owner-update-allowed',
+      'profile-email-role-locked',
+      'restaurant-settings-admin-only',
+      'staff-cannot-update-restaurant-settings',
+      'notification-prefs-owner-only',
     ];
-    expect(outcomes).toHaveLength(22);
+    expect(outcomes).toHaveLength(31);
   });
 });

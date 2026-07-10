@@ -6,6 +6,8 @@ const scheduler_1 = require("firebase-functions/v2/scheduler");
 const firebase_functions_1 = require("firebase-functions");
 const expiry_1 = require("../utils/expiry");
 const pushService_1 = require("../messaging/pushService");
+const createNotificationDocument_1 = require("../messaging/createNotificationDocument");
+const writeAuditLog_1 = require("../audit/writeAuditLog");
 function toDateOnly(value) {
     if (!value)
         return '';
@@ -51,23 +53,7 @@ exports.evaluateInventoryExpiry = (0, scheduler_1.onSchedule)({
             .get();
         if (batchesSnap.empty)
             continue;
-        const usersSnap = await db
-            .collection('users')
-            .where('restaurantId', '==', restaurantId)
-            .where('status', '==', 'approved')
-            .get();
-        const userTokenMap = new Map();
-        for (const userDoc of usersSnap.docs) {
-            const data = userDoc.data();
-            const tokens = Array.isArray(data.fcmTokens)
-                ? data.fcmTokens.map(String).filter(Boolean)
-                : [];
-            if (data.fcmToken && !tokens.includes(String(data.fcmToken))) {
-                tokens.push(String(data.fcmToken));
-            }
-            if (tokens.length > 0)
-                userTokenMap.set(userDoc.id, tokens);
-        }
+        const { tokens: allTokens, userTokenMap, userIds } = await (0, pushService_1.loadRestaurantDeviceTokens)(restaurantId);
         for (const batchDoc of batchesSnap.docs) {
             evaluated += 1;
             const data = batchDoc.data();
@@ -98,14 +84,15 @@ exports.evaluateInventoryExpiry = (0, scheduler_1.onSchedule)({
                 nextTone,
                 now,
             });
-            await db.collection('auditLogs').add({
+            await (0, writeAuditLog_1.writeAuditLog)({
                 action: 'expiry_detected',
                 restaurantId,
                 batchId: batchDoc.id,
-                userId: 'system',
-                previousValues: { evaluatedTone: previousTone },
-                newValues: { status: nextTone, daysRemaining, suppressed: suppress },
-                timestamp: firestore_1.FieldValue.serverTimestamp(),
+                targetCollection: 'inventoryBatches',
+                targetDocumentId: batchDoc.id,
+                targetName: String(data.ingredientName ?? ''),
+                before: { evaluatedTone: previousTone },
+                after: { status: nextTone, daysRemaining, suppressed: suppress },
             });
             if (suppress) {
                 suppressed += 1;
@@ -137,8 +124,7 @@ exports.evaluateInventoryExpiry = (0, scheduler_1.onSchedule)({
                 expiryDate,
                 daysRemaining: String(daysRemaining),
             };
-            const allTokens = Array.from(userTokenMap.values()).flat();
-            const pushResult = await (0, pushService_1.sendExpiryPush)({
+            const pushResult = await (0, pushService_1.sendRestaurantPush)({
                 tokens: allTokens,
                 title: copy.title,
                 body: copy.body,
@@ -162,39 +148,52 @@ exports.evaluateInventoryExpiry = (0, scheduler_1.onSchedule)({
                 title: copy.title,
                 body: copy.body,
             });
-            await Promise.all(usersSnap.docs.map((userDoc) => db.collection('notifications').add({
+            await (0, createNotificationDocument_1.createInboxNotifications)({
                 restaurantId,
-                userId: userDoc.id,
+                userIds,
                 batchId: batchDoc.id,
-                ingredientName: data.ingredientName,
-                quantity: data.quantity,
-                unit: data.unit,
-                dateReceived: toDateOnly(data.dateReceived),
-                expiryDate,
-                daysRemaining,
-                status: nextTone,
+                type: 'expiry',
+                priority: nextTone === 'red' ? 'high' : 'normal',
                 title: copy.title,
                 body: copy.body,
-                read: false,
                 deepLink,
                 historyId: historyRef.id,
-                createdAt: firestore_1.FieldValue.serverTimestamp(),
-            })));
-            await db.collection('auditLogs').add({
+                createdBy: 'system',
+                metadata: {
+                    status: nextTone,
+                    ingredientName: data.ingredientName,
+                    quantity: data.quantity,
+                    unit: data.unit,
+                    dateReceived: toDateOnly(data.dateReceived),
+                    expiryDate,
+                    daysRemaining,
+                },
+                expiryFields: {
+                    ingredientName: String(data.ingredientName ?? ''),
+                    quantity: Number(data.quantity ?? 0),
+                    unit: String(data.unit ?? ''),
+                    dateReceived: toDateOnly(data.dateReceived),
+                    expiryDate,
+                    daysRemaining,
+                    status: nextTone,
+                },
+            });
+            await (0, writeAuditLog_1.writeAuditLog)({
                 action: pushResult.failureCount > 0 && pushResult.successCount === 0
                     ? 'notification_failed'
                     : 'notification_sent',
                 restaurantId,
                 batchId: batchDoc.id,
-                userId: 'system',
-                previousValues: { evaluatedTone: previousTone },
-                newValues: {
+                targetCollection: 'notifications',
+                targetDocumentId: historyRef.id,
+                targetName: String(data.ingredientName ?? ''),
+                before: { evaluatedTone: previousTone },
+                after: {
                     status: nextTone,
                     historyId: historyRef.id,
                     successCount: pushResult.successCount,
                     failureCount: pushResult.failureCount,
                 },
-                timestamp: firestore_1.FieldValue.serverTimestamp(),
             });
             await batchDoc.ref.update({
                 ...basePatch,

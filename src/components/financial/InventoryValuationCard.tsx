@@ -9,6 +9,7 @@ type Props = {
   excludedExpired: number;
   excludedConsumed: number;
   excludedArchived: number;
+  currency?: string;
 };
 
 export function InventoryValuationCard({
@@ -18,13 +19,14 @@ export function InventoryValuationCard({
   excludedExpired,
   excludedConsumed,
   excludedArchived,
+  currency = 'USD',
 }: Props) {
   const updated = calculatedAt.slice(0, 19).replace('T', ' ');
 
   return (
     <View style={styles.card}>
       <Text style={styles.label}>Current inventory value</Text>
-      <Text style={styles.value}>{formatMoney(totalValue)}</Text>
+      <Text style={styles.value}>{formatMoney(totalValue, currency)}</Text>
       <Text style={styles.meta}>
         {batchCount} active non-expired batch{batchCount === 1 ? '' : 'es'}
       </Text>

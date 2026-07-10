@@ -56,6 +56,13 @@ export default function StaffTabsLayout() {
           tabBarLabel: ({ color }) => <TabLabel label="AI" color={color} />,
         }}
       />
+      <Tabs.Screen
+        name="settings"
+        options={{
+          title: 'Settings',
+          tabBarLabel: ({ color }) => <TabLabel label="Settings" color={color} />,
+        }}
+      />
     </Tabs>
   );
 }

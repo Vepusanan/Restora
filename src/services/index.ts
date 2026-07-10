@@ -6,6 +6,7 @@ export { storageService } from './storage.service';
 export { inventoryService } from './inventory.service';
 export { notificationService } from './notifications.service';
 export { deviceTokenService, buildDeviceTokenDocId } from './device-token.service';
+export { auditService } from './audit.service';
 export { wasteService } from './waste.service';
 export { financialService } from './financial.service';
 export { analyticsExportService } from './analytics-export.service';

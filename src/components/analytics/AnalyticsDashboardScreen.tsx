@@ -20,6 +20,7 @@ import { InlineError } from '@components/ui/InlineError';
 import { SelectField } from '@components/ui/SelectField';
 import { useAnalyticsDashboard } from '@hooks/useAnalyticsDashboard';
 import { useAuth } from '@hooks/useAuth';
+import { useRestaurantSettings } from '@hooks/useRestaurantSettings';
 import { analyticsExportService } from '@services/analytics-export.service';
 import { colors, spacing } from '@constants/theme';
 import type { AggregationPeriod, AnalyticsExportFormat, ServiceError } from '@/types';
@@ -43,6 +44,7 @@ const FORMAT_OPTIONS: { value: AnalyticsExportFormat; label: string }[] = [
 
 export function AnalyticsDashboardScreen() {
   const { profile, isAdmin } = useAuth();
+  const { currency } = useRestaurantSettings(profile?.restaurantId);
   const {
     allowed,
     loading,
@@ -118,6 +120,7 @@ export function AnalyticsDashboardScreen() {
 
       <AnalyticsSummaryCards
         lastUpdated={lastUpdated.toISOString()}
+        currency={currency}
         cards={[
           { label: 'Inventory value', value: valuation.totalValue, tone: 'primary' },
           { label: 'Waste cost', value: totalWasteCost, tone: 'danger' },
@@ -132,6 +135,7 @@ export function AnalyticsDashboardScreen() {
         excludedExpired={valuation.excludedExpired}
         excludedConsumed={valuation.excludedConsumed}
         excludedArchived={valuation.excludedArchived}
+        currency={currency}
       />
 
       <WasteTrendChart

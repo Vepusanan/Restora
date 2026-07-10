@@ -57,11 +57,17 @@ export default function StaffManagementScreen() {
     setError(null);
     try {
       if (dialog.type === 'deactivate') {
-        await staffService.deactivate(dialog.member.uid);
+        await staffService.deactivate(dialog.member.uid, {
+          restaurantId: profile?.restaurantId ?? '',
+          staffName: dialog.member.displayName,
+        });
       } else {
         const status: Extract<UserStatus, 'approved' | 'rejected'> =
           dialog.type === 'approve' ? 'approved' : 'rejected';
-        await staffService.setStatus(dialog.member.uid, status);
+        await staffService.setStatus(dialog.member.uid, status, {
+          restaurantId: profile?.restaurantId ?? '',
+          staffName: dialog.member.displayName,
+        });
       }
       setDialog(null);
     } catch (err) {

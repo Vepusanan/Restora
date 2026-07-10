@@ -1,5 +1,4 @@
 import {
-  addDoc,
   arrayRemove,
   arrayUnion,
   collection,
@@ -23,8 +22,8 @@ import {
 } from '@constants/notifications';
 import { createServiceError, toServiceError } from '@utils/errors';
 import { buildDeviceTokenDocId } from '@utils/notifications';
+import { auditService } from './audit.service';
 import type {
-  AuditAction,
   DevicePlatform,
   RegisterDeviceTokenInput,
 } from '@/types';
@@ -52,31 +51,30 @@ function resolveAppVersion(): string {
 }
 
 async function writeDeviceAudit(input: {
-  action: Extract<AuditAction, 'device_registered' | 'device_removed'>;
+  action: 'device_registered' | 'device_removed';
   userId: string;
   restaurantId: string;
   deviceId: string;
   fcmToken: string;
 }): Promise<void> {
-  try {
-    await addDoc(collection(getDb(), COLLECTIONS.auditLogs), {
-      action: input.action,
-      restaurantId: input.restaurantId,
-      batchId: '',
-      userId: input.userId,
+  await auditService.writeSafe({
+    action: input.action,
+    restaurantId: input.restaurantId,
+    userId: input.userId,
+    deviceId: input.deviceId,
+    target: {
+      collection: 'deviceTokens',
+      documentId: buildDeviceTokenDocId(input.userId, input.deviceId),
+      name: input.deviceId,
+    },
+    before: input.action === 'device_removed' ? { active: true } : null,
+    after: {
       deviceId: input.deviceId,
-      notificationId: null,
-      previousValues: null,
-      newValues: {
-        deviceId: input.deviceId,
-        platform: resolvePlatform(),
-        tokenSuffix: input.fcmToken.slice(-8),
-      },
-      timestamp: serverTimestamp(),
-    });
-  } catch (error) {
-    console.warn('Device audit write skipped', error);
-  }
+      platform: resolvePlatform(),
+      tokenSuffix: input.fcmToken.slice(-8),
+      active: input.action === 'device_registered',
+    },
+  });
 }
 
 /**

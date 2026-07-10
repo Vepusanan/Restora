@@ -117,7 +117,28 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   logout: async () => {
     set({ status: 'loading', error: null });
     try {
-      // FR-051 — remove this device token before signing out.
+      const { profile, user } = get();
+      if (profile?.restaurantId && user?.uid) {
+        const { auditService } = await import('@services/audit.service');
+        await auditService.writeSafe({
+          action: 'user_logout',
+          restaurantId: profile.restaurantId,
+          userId: user.uid,
+          actor: {
+            id: user.uid,
+            name: profile.displayName,
+            role: profile.role,
+          },
+          target: {
+            collection: 'users',
+            documentId: user.uid,
+            name: profile.displayName,
+          },
+          before: { signedIn: true },
+          after: { signedIn: false },
+        });
+      }
+
       const { deviceTokenService } = await import('@services/device-token.service');
       await deviceTokenService.unregisterCurrent().catch(() => undefined);
       await authService.logout();

@@ -1,6 +1,8 @@
 import type { DocumentData, Timestamp } from 'firebase/firestore';
 import type {
   AppNotification,
+  AuditAction,
+  AuditLogEntry,
   DeviceToken,
   ExpiryTone,
   InventoryBatch,
@@ -17,6 +19,13 @@ import type {
 import { EXPIRY_AMBER_DAYS } from '@constants/inventory';
 import { clampExpiryThreshold, ingredientKey, normalizeIngredientName } from '@utils/expiry';
 import { resolveNotificationType } from '@utils/notifications';
+import {
+  buildAuditDescription,
+  resolveAuditActionType,
+  resolveAuditModule,
+  resolveAuditTargetCollection,
+} from '@utils/audit';
+import { normalizeCurrency, normalizeNotificationPrefs } from '@utils/settings';
 import { calculateCostLoss } from '@utils/waste';
 
 export function toIso(value: unknown): string {
@@ -59,6 +68,7 @@ export function mapUserProfile(uid: string, data: DocumentData): UserProfile {
     uid,
     email: String(data.email ?? ''),
     displayName: String(data.displayName ?? ''),
+    phoneNumber: String(data.phoneNumber ?? ''),
     role: (data.role as UserRole) ?? 'staff',
     status: (data.status as UserStatus) ?? 'pending',
     restaurantId: String(data.restaurantId ?? ''),
@@ -68,6 +78,7 @@ export function mapUserProfile(uid: string, data: DocumentData): UserProfile {
     photoURL: data.photoURL ? String(data.photoURL) : null,
     fcmToken: data.fcmToken ? String(data.fcmToken) : null,
     fcmTokens: mapTokens(data),
+    notificationPrefs: normalizeNotificationPrefs(data.notificationPrefs),
     createdAt: toIso(data.createdAt),
     updatedAt: toIso(data.updatedAt),
   };
@@ -82,6 +93,8 @@ export function mapRestaurant(id: string, data: DocumentData): Restaurant {
     expiryAlertThreshold: clampExpiryThreshold(
       Number(data.expiryAlertThreshold ?? EXPIRY_AMBER_DAYS),
     ),
+    currency: normalizeCurrency(data.currency),
+    updatedBy: data.updatedBy ? String(data.updatedBy) : null,
     createdAt: toIso(data.createdAt),
     updatedAt: toIso(data.updatedAt),
   };
@@ -186,6 +199,66 @@ export function mapDeviceToken(id: string, data: DocumentData): DeviceToken {
     createdAt: toIso(data.createdAt),
     updatedAt: toIso(data.updatedAt),
     lastActiveAt: toIso(data.lastActiveAt),
+  };
+}
+
+export function mapAuditLogEntry(id: string, data: DocumentData): AuditLogEntry {
+  const action = String(data.action ?? 'threshold_updated') as AuditAction;
+  const before =
+    (data.before as Record<string, unknown> | null | undefined) ??
+    (data.previousValues as Record<string, unknown> | null | undefined) ??
+    null;
+  const after =
+    (data.after as Record<string, unknown> | null | undefined) ??
+    (data.newValues as Record<string, unknown> | null | undefined) ??
+    null;
+  const actorId = String(data.actorId ?? data.userId ?? 'system');
+  const actorName = String(data.actorName ?? (actorId === 'system' ? 'System' : 'Unknown'));
+  const actorRole = String(data.actorRole ?? (actorId === 'system' ? 'system' : 'unknown'));
+  const targetDocumentId = String(
+    data.targetDocumentId ?? data.batchId ?? data.wasteLogId ?? data.notificationId ?? '',
+  );
+  const targetName = String(data.targetName ?? '');
+  const targetCollection = String(
+    data.targetCollection ?? resolveAuditTargetCollection(action),
+  );
+  const actionType =
+    (data.actionType as AuditLogEntry['actionType']) || resolveAuditActionType(action);
+  const module =
+    (data.module as AuditLogEntry['module']) || resolveAuditModule(action);
+
+  return {
+    id,
+    restaurantId: String(data.restaurantId ?? ''),
+    action,
+    actionType,
+    module,
+    actorId,
+    actorName,
+    actorRole,
+    userId: actorId,
+    targetCollection,
+    targetDocumentId,
+    targetName,
+    batchId: String(data.batchId ?? ''),
+    notificationId: data.notificationId != null ? String(data.notificationId) : null,
+    deviceId: data.deviceId != null ? String(data.deviceId) : null,
+    wasteLogId: data.wasteLogId != null ? String(data.wasteLogId) : null,
+    timestamp: toIso(data.timestamp),
+    before,
+    after,
+    previousValues: before,
+    newValues: after,
+    metadata:
+      data.metadata && typeof data.metadata === 'object'
+        ? (data.metadata as Record<string, unknown>)
+        : {},
+    description: String(
+      data.description ??
+        buildAuditDescription({ action, actorName, targetName }),
+    ),
+    appVersion: String(data.appVersion ?? ''),
+    platform: String(data.platform ?? ''),
   };
 }
 

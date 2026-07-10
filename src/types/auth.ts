@@ -14,6 +14,7 @@ export type UserProfile = {
   uid: string;
   email: string;
   displayName: string;
+  phoneNumber: string;
   role: UserRole;
   status: UserStatus;
   restaurantId: string;
@@ -24,6 +25,7 @@ export type UserProfile = {
   /** @deprecated Prefer fcmTokens for multi-device support */
   fcmToken: string | null;
   fcmTokens: string[];
+  notificationPrefs: import('./settings').NotificationPreferences;
   createdAt: string;
   updatedAt: string;
 };
@@ -35,6 +37,8 @@ export type Restaurant = {
   ownerId: string;
   /** Amber alert threshold in days (FR-025). Default 3. */
   expiryAlertThreshold: number;
+  currency: import('./settings').RestaurantCurrency;
+  updatedBy: string | null;
   createdAt: string;
   updatedAt: string;
 };
