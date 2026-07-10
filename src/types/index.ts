@@ -30,6 +30,15 @@ export type {
   ExpiryEvaluationFields,
 } from './notifications';
 
+export type {
+  WasteReason,
+  WasteLog,
+  CreateWasteInput,
+  WasteVisibilityFilter,
+  WasteFilters,
+  WasteSummary,
+} from './waste';
+
 export type AiGenerateRequest = {
   prompt: string;
 };

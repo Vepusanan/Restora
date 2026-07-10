@@ -32,6 +32,13 @@ export default function AdminTabsLayout() {
         }}
       />
       <Tabs.Screen
+        name="waste"
+        options={{
+          title: 'Waste',
+          tabBarLabel: ({ color }) => <TabLabel label="Waste" color={color} />,
+        }}
+      />
+      <Tabs.Screen
         name="analytics"
         options={{
           title: 'Analytics',

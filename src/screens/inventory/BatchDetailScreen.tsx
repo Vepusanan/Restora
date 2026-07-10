@@ -115,6 +115,16 @@ export function BatchDetailScreen({ basePath }: Props) {
           <Button title="Mark consumed" onPress={() => setConsumeOpen(true)} />
         ) : null}
 
+        {canConsume ? (
+          <Button
+            title="Log waste"
+            variant="secondary"
+            onPress={() =>
+              router.push(`${basePath}/log-waste?batchId=${batch.id}` as never)
+            }
+          />
+        ) : null}
+
         {isAdmin && !batch.archived ? (
           <Button
             title="Archive batch"

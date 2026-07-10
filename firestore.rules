@@ -30,6 +30,14 @@ service cloud.firestore {
       return isSignedIn() && request.auth.uid == uid;
     }
 
+    function batchData(batchId) {
+      return get(/databases/$(database)/documents/inventoryBatches/$(batchId)).data;
+    }
+
+    function isValidWasteReason(reason) {
+      return reason in ['Expired', 'Burnt', 'Prep Waste', 'Leftovers'];
+    }
+
     match /restaurantCodes/{code} {
       allow get: if true;
       allow list: if false;
@@ -173,7 +181,10 @@ service cloud.firestore {
           'batch_edited',
           'batch_consumed',
           'batch_archived',
-          'threshold_updated'
+          'threshold_updated',
+          'waste_created',
+          'waste_voided',
+          'inventory_restored'
         ];
       allow update, delete: if false;
     }
@@ -197,12 +208,58 @@ service cloud.firestore {
       allow create, update, delete: if false;
     }
 
-    match /waste/{docId} {
-      allow read: if isApproved() && resource.data.restaurantId == userDoc().restaurantId;
-      allow create: if isApproved()
-        && request.resource.data.restaurantId == userDoc().restaurantId;
-      allow update, delete: if isApproved()
+    // Waste logs (FR-026–FR-031). Prefer Cloud Functions; client fallback allowed with strict checks.
+    match /wasteLogs/{docId} {
+      allow read: if isApproved()
         && resource.data.restaurantId == userDoc().restaurantId;
+
+      allow create: if isApproved()
+        && request.resource.data.restaurantId == userDoc().restaurantId
+        && request.resource.data.loggedBy == request.auth.uid
+        && request.resource.data.voided == false
+        && request.resource.data.voidedAt == null
+        && request.resource.data.voidedBy == null
+        && request.resource.data.quantityWasted is number
+        && request.resource.data.quantityWasted > 0
+        && request.resource.data.unitCost is number
+        && request.resource.data.unitCost >= 0
+        && request.resource.data.costLoss is number
+        && request.resource.data.costLoss ==
+          request.resource.data.quantityWasted * request.resource.data.unitCost
+        && isValidWasteReason(request.resource.data.wasteReason)
+        && exists(/databases/$(database)/documents/inventoryBatches/$(request.resource.data.batchId))
+        && batchData(request.resource.data.batchId).restaurantId == userDoc().restaurantId
+        && batchData(request.resource.data.batchId).archived == false
+        && batchData(request.resource.data.batchId).consumed == false
+        && request.resource.data.quantityWasted <= batchData(request.resource.data.batchId).quantity
+        && request.resource.data.unitCost == batchData(request.resource.data.batchId).unitCost
+        && request.resource.data.ingredientName == batchData(request.resource.data.batchId).ingredientName
+        && request.resource.data.unit == batchData(request.resource.data.batchId).unit;
+
+      // Admin void only — cannot alter financial/identity fields.
+      allow update: if isAdmin()
+        && resource.data.restaurantId == userDoc().restaurantId
+        && resource.data.voided == false
+        && request.resource.data.voided == true
+        && request.resource.data.voidedBy == request.auth.uid
+        && request.resource.data.restaurantId == resource.data.restaurantId
+        && request.resource.data.batchId == resource.data.batchId
+        && request.resource.data.ingredientName == resource.data.ingredientName
+        && request.resource.data.quantityWasted == resource.data.quantityWasted
+        && request.resource.data.unit == resource.data.unit
+        && request.resource.data.wasteReason == resource.data.wasteReason
+        && request.resource.data.unitCost == resource.data.unitCost
+        && request.resource.data.costLoss == resource.data.costLoss
+        && request.resource.data.loggedBy == resource.data.loggedBy
+        && request.resource.data.timestamp == resource.data.timestamp
+        && request.resource.data.createdAt == resource.data.createdAt;
+
+      allow delete: if false;
+    }
+
+    // Legacy collection name — locked down.
+    match /waste/{docId} {
+      allow read, write: if false;
     }
 
     match /{document=**} {

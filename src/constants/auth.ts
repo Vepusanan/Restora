@@ -6,6 +6,7 @@ export const COLLECTIONS = {
   notificationHistory: 'notificationHistory',
   inventoryBatches: 'inventoryBatches',
   auditLogs: 'auditLogs',
+  wasteLogs: 'wasteLogs',
   waste: 'waste',
   /** Admin-only financial collections (rules deny staff) */
   costs: 'costs',

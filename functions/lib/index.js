@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.cleanupInvalidFCMTokens = exports.evaluateInventoryExpiry = exports.deactivateStaff = exports.generateContent = void 0;
+exports.voidWasteEntry = exports.createWasteLog = exports.cleanupInvalidFCMTokens = exports.evaluateInventoryExpiry = exports.deactivateStaff = exports.generateContent = void 0;
 const app_1 = require("firebase-admin/app");
 const v2_1 = require("firebase-functions/v2");
 (0, app_1.initializeApp)();
@@ -13,4 +13,8 @@ var evaluateInventoryExpiry_1 = require("./expiry/evaluateInventoryExpiry");
 Object.defineProperty(exports, "evaluateInventoryExpiry", { enumerable: true, get: function () { return evaluateInventoryExpiry_1.evaluateInventoryExpiry; } });
 var cleanupInvalidFCMTokens_1 = require("./messaging/cleanupInvalidFCMTokens");
 Object.defineProperty(exports, "cleanupInvalidFCMTokens", { enumerable: true, get: function () { return cleanupInvalidFCMTokens_1.cleanupInvalidFCMTokens; } });
+var createWasteLog_1 = require("./waste/createWasteLog");
+Object.defineProperty(exports, "createWasteLog", { enumerable: true, get: function () { return createWasteLog_1.createWasteLog; } });
+var voidWasteEntry_1 = require("./waste/voidWasteEntry");
+Object.defineProperty(exports, "voidWasteEntry", { enumerable: true, get: function () { return voidWasteEntry_1.voidWasteEntry; } });
 //# sourceMappingURL=index.js.map

@@ -10,8 +10,12 @@ export const routes = {
   adminAnalytics: '/(admin)/(tabs)/analytics',
   adminCost: '/(admin)/cost',
   adminInventory: '/(admin)/(tabs)/inventory',
+  adminWaste: '/(admin)/(tabs)/waste',
   adminAddBatch: '/(admin)/add-batch',
+  adminLogWaste: '/(admin)/log-waste',
   staffHome: '/(staff)/(tabs)',
   staffInventory: '/(staff)/(tabs)/inventory',
+  staffWaste: '/(staff)/(tabs)/waste',
   staffAddBatch: '/(staff)/add-batch',
+  staffLogWaste: '/(staff)/log-waste',
 } as const;

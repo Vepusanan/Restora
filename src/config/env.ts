@@ -35,6 +35,15 @@ export const env = {
     process.env.EXPO_PUBLIC_FIREBASE_FUNCTIONS_REGION ||
     fromExtra('EXPO_PUBLIC_FIREBASE_FUNCTIONS_REGION') ||
     'us-central1',
+  /**
+   * When false (default without Blaze), waste/staff callables are skipped and
+   * Firestore transactions + security rules are used instead.
+   * Set EXPO_PUBLIC_USE_CALLABLE_FUNCTIONS=true after deploying Cloud Functions.
+   */
+  useCallableFunctions:
+    (process.env.EXPO_PUBLIC_USE_CALLABLE_FUNCTIONS ||
+      fromExtra('EXPO_PUBLIC_USE_CALLABLE_FUNCTIONS') ||
+      'false') === 'true',
 } as const;
 
 export function isFirebaseConfigured(): boolean {

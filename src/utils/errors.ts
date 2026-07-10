@@ -26,6 +26,10 @@ const AUTH_MESSAGES: Record<string, string> = {
   'restora/account-pending': 'Your account is waiting for admin approval.',
   'restora/account-rejected': 'Your registration was rejected by the admin.',
   'restora/account-deactivated': 'Your account has been deactivated.',
+  'restora/invalid-waste-quantity': 'Waste quantity exceeds remaining batch quantity.',
+  'restora/batch-not-active': 'This batch is not available for waste logging.',
+  'restora/already-voided': 'This waste entry has already been voided.',
+  'restora/waste-not-found': 'Waste entry not found.',
 };
 
 export function toServiceError(error: unknown, fallback = 'Something went wrong'): ServiceError {

@@ -10,9 +10,12 @@ import type {
   UserProfile,
   UserRole,
   UserStatus,
+  WasteLog,
+  WasteReason,
 } from '@/types';
 import { EXPIRY_AMBER_DAYS } from '@constants/inventory';
 import { clampExpiryThreshold, ingredientKey, normalizeIngredientName } from '@utils/expiry';
+import { calculateCostLoss } from '@utils/waste';
 
 export function toIso(value: unknown): string {
   if (!value) return new Date().toISOString();
@@ -163,5 +166,33 @@ export function mapNotificationHistory(
     successCount: Number(data.successCount ?? 0),
     failureCount: Number(data.failureCount ?? 0),
     triggeredAt: toIso(data.triggeredAt),
+  };
+}
+
+export function mapWasteLog(id: string, data: DocumentData): WasteLog {
+  const quantityWasted = Number(data.quantityWasted ?? 0);
+  const unitCost = Number(data.unitCost ?? 0);
+  const costLoss =
+    data.costLoss != null ? Number(data.costLoss) : calculateCostLoss(quantityWasted, unitCost);
+
+  return {
+    id,
+    restaurantId: String(data.restaurantId ?? ''),
+    batchId: String(data.batchId ?? ''),
+    ingredientName: String(data.ingredientName ?? ''),
+    ingredientKey: String(data.ingredientKey ?? ingredientKey(String(data.ingredientName ?? ''))),
+    quantityWasted,
+    unit: String(data.unit ?? ''),
+    wasteReason: (data.wasteReason as WasteReason) ?? 'Prep Waste',
+    unitCost,
+    costLoss,
+    loggedBy: String(data.loggedBy ?? ''),
+    loggedByName: String(data.loggedByName ?? ''),
+    timestamp: toIso(data.timestamp ?? data.createdAt),
+    voided: Boolean(data.voided),
+    voidedAt: data.voidedAt ? toIso(data.voidedAt) : null,
+    voidedBy: data.voidedBy ? String(data.voidedBy) : null,
+    createdAt: toIso(data.createdAt),
+    updatedAt: toIso(data.updatedAt ?? data.createdAt),
   };
 }

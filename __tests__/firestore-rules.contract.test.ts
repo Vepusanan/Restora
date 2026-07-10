@@ -8,12 +8,11 @@
  * FR-006 Deactivated staff inventory read → denied
  * FR-008 Staff costs/analytics read → denied; admin → allowed
  * FR-007 Unauthenticated users/{id} read → denied
- * FR-021–025 Expiry monitoring:
- *   - Approved members can read own restaurant (threshold)
- *   - Only admin can update expiryAlertThreshold (1–30)
- *   - Clients cannot create notifications / notificationHistory
- *   - Users can mark own notifications read
- *   - Evaluation fields on inventoryBatches are immutable from clients
+ * FR-026–031 Waste management:
+ *   - Approved staff/admin can create wasteLogs with server-validated costLoss
+ *   - Staff cannot void; admin can void once
+ *   - Hard delete denied
+ *   - Cross-restaurant access denied
  */
 describe('firestore rules contract', () => {
   it('documents the required security outcomes', () => {
@@ -28,7 +27,10 @@ describe('firestore rules contract', () => {
       'admin-only-threshold-update',
       'clients-cannot-create-notification-history',
       'batch-eval-fields-immutable-for-clients',
+      'staff-can-create-waste-logs',
+      'admin-only-void-waste',
+      'waste-hard-delete-denied',
     ];
-    expect(outcomes).toHaveLength(10);
+    expect(outcomes).toHaveLength(13);
   });
 });

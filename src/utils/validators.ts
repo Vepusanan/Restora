@@ -85,6 +85,14 @@ export const editBatchSchema = z
     path: ['expiryDate'],
   });
 
+export const createWasteSchema = z.object({
+  batchId: z.string().trim().min(1, 'Select an inventory batch'),
+  quantityWasted: z.number().positive('Quantity must be greater than 0'),
+  wasteReason: z.enum(['Expired', 'Burnt', 'Prep Waste', 'Leftovers'], {
+    message: 'Select a waste reason',
+  }),
+});
+
 export type LoginFormValues = z.infer<typeof loginSchema>;
 export type AdminRegisterFormValues = z.infer<typeof adminRegisterSchema>;
 export type StaffRegisterFormValues = z.infer<typeof staffRegisterSchema>;
@@ -92,3 +100,4 @@ export type RegisterFormValues = AdminRegisterFormValues;
 export type ForgotPasswordFormValues = z.infer<typeof forgotPasswordSchema>;
 export type CreateBatchFormValues = z.infer<typeof createBatchSchema>;
 export type EditBatchFormValues = z.infer<typeof editBatchSchema>;
+export type CreateWasteFormValues = z.infer<typeof createWasteSchema>;

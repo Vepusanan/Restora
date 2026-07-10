@@ -62,7 +62,10 @@ export type AuditAction =
   | 'threshold_updated'
   | 'expiry_detected'
   | 'notification_sent'
-  | 'notification_failed';
+  | 'notification_failed'
+  | 'waste_created'
+  | 'waste_voided'
+  | 'inventory_restored';
 
 export type AuditLogEntry = {
   id: string;
