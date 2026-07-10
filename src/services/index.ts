@@ -7,6 +7,7 @@ export { inventoryService } from './inventory.service';
 export { notificationService } from './notifications.service';
 export { wasteService } from './waste.service';
 export { financialService } from './financial.service';
+export { analyticsExportService } from './analytics-export.service';
 export { generateAIResponse } from './gemini/generateAIResponse';
 export { getFirebaseApp } from './firebase/config';
 export { getFirebaseAuth } from './firebase/auth';

@@ -123,14 +123,10 @@ service cloud.firestore {
     }
 
     match /analytics/{docId} {
+      // FR-036–041 — admin-only analytics docs; clients cannot write (no tampering).
       allow read: if isAdmin()
         && resource.data.restaurantId == userDoc().restaurantId;
-      allow create: if isAdmin()
-        && request.resource.data.restaurantId == userDoc().restaurantId;
-      allow update: if isAdmin()
-        && resource.data.restaurantId == userDoc().restaurantId
-        && request.resource.data.restaurantId == resource.data.restaurantId;
-      allow delete: if false;
+      allow create, update, delete: if false;
     }
 
     // FR-035 — financial summaries are admin-read; clients cannot write (no tampering).

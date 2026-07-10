@@ -8,10 +8,9 @@
  * FR-006 Deactivated staff inventory read → denied
  * FR-008 Staff costs/analytics read → denied; admin → allowed
  * FR-007 Unauthenticated users/{id} read → denied
- * FR-032–035 Cost tracking:
- *   - costs / analytics / financialSummaries admin-only
- *   - Staff financialSummaries read → permission-denied
- *   - Clients cannot write financialSummaries
+ * FR-036–041 Analytics:
+ *   - analytics collection admin-read only; client writes denied
+ *   - Staff analytics read → permission-denied
  */
 describe('firestore rules contract', () => {
   it('documents the required security outcomes', () => {
@@ -31,7 +30,9 @@ describe('firestore rules contract', () => {
       'waste-hard-delete-denied',
       'staff-blocked-from-financial-summaries',
       'clients-cannot-write-financial-summaries',
+      'staff-blocked-from-analytics',
+      'clients-cannot-write-analytics',
     ];
-    expect(outcomes).toHaveLength(15);
+    expect(outcomes).toHaveLength(17);
   });
 });

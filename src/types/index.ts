@@ -48,6 +48,15 @@ export type {
   FinancialDateRange,
 } from './financial';
 
+export type {
+  AggregationPeriod,
+  WasteTrendPoint,
+  TopWastedIngredient,
+  IngredientCostShare,
+  AnalyticsExportFormat,
+  AnalyticsDashboardSnapshot,
+} from './analytics';
+
 export type AiGenerateRequest = {
   prompt: string;
 };
