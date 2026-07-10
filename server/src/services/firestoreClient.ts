@@ -98,6 +98,65 @@ async function firestoreRunQuery(
   return rows.map((row) => row.document).filter(Boolean) as FirestoreDocument[];
 }
 
+async function firestorePatch(
+  idToken: string,
+  path: string,
+  fields: Record<string, unknown>,
+): Promise<void> {
+  const fieldPaths = Object.keys(fields);
+  const url = `https://firestore.googleapis.com/v1/projects/${serverEnv.firebaseProjectId}/databases/(default)/documents/${path}?${fieldPaths
+    .map((key) => `updateMask.fieldPaths=${encodeURIComponent(key)}`)
+    .join('&')}`;
+
+  const response = await fetch(url, {
+    method: 'PATCH',
+    headers: {
+      Authorization: `Bearer ${idToken}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ fields: toFirestoreFields(fields) }),
+  });
+
+  if (!response.ok) {
+    const body = await response.text();
+    throw new Error(`Firestore patch failed (${response.status}): ${body}`);
+  }
+}
+
+function toFirestoreFields(data: Record<string, unknown>): Record<string, FirestoreValue> {
+  const out: Record<string, FirestoreValue> = {};
+  for (const [key, value] of Object.entries(data)) {
+    out[key] = toFirestoreValue(value);
+  }
+  return out;
+}
+
+function toFirestoreValue(value: unknown): FirestoreValue {
+  if (value === null || value === undefined) return { nullValue: null };
+  if (typeof value === 'string') return { stringValue: value };
+  if (typeof value === 'boolean') return { booleanValue: value };
+  if (typeof value === 'number') {
+    return Number.isInteger(value)
+      ? { integerValue: String(value) }
+      : { doubleValue: value };
+  }
+  if (Array.isArray(value)) {
+    return {
+      arrayValue: {
+        values: value.map((item) => toFirestoreValue(item)),
+      },
+    };
+  }
+  if (typeof value === 'object') {
+    return {
+      mapValue: {
+        fields: toFirestoreFields(value as Record<string, unknown>),
+      },
+    };
+  }
+  return { stringValue: String(value) };
+}
+
 export const firestoreUserApi = {
   async getUserProfile(idToken: string, uid: string) {
     const doc = await firestoreGet(idToken, `users/${uid}`);
@@ -109,6 +168,17 @@ export const firestoreUserApi = {
       restaurantId: readString(doc.fields, 'restaurantId'),
       restaurantName: readString(doc.fields, 'restaurantName'),
       displayName: readString(doc.fields, 'displayName'),
+    };
+  },
+
+  async getRestaurant(idToken: string, restaurantId: string) {
+    const doc = await firestoreGet(idToken, `restaurants/${restaurantId}`);
+    if (!doc?.fields) return null;
+    return {
+      id: restaurantId,
+      name: readString(doc.fields, 'name'),
+      currency: readString(doc.fields, 'currency') || 'USD',
+      expiryAlertThreshold: readNumber(doc.fields, 'expiryAlertThreshold') || 3,
     };
   },
 
@@ -164,6 +234,52 @@ export const firestoreUserApi = {
       };
     });
   },
+
+  async getAiAnalytics(idToken: string, restaurantId: string) {
+    const doc = await firestoreGet(idToken, `aiAnalytics/${restaurantId}`);
+    if (!doc?.fields) return null;
+    return fromFirestoreDocument(doc);
+  },
+
+  async saveAiAnalytics(
+    idToken: string,
+    restaurantId: string,
+    payload: Record<string, unknown>,
+  ): Promise<void> {
+    await firestorePatch(idToken, `aiAnalytics/${restaurantId}`, {
+      ...payload,
+      restaurantId,
+    });
+  },
 };
+
+function fromFirestoreValue(value: FirestoreValue | undefined): unknown {
+  if (!value) return null;
+  if (value.stringValue != null) return value.stringValue;
+  if (value.integerValue != null) return Number(value.integerValue);
+  if (typeof value.doubleValue === 'number') return value.doubleValue;
+  if (value.booleanValue != null) return value.booleanValue;
+  if (value.nullValue !== undefined) return null;
+  if (value.timestampValue) return value.timestampValue;
+  if (value.arrayValue?.values) {
+    return value.arrayValue.values.map((item) => fromFirestoreValue(item));
+  }
+  if (value.mapValue?.fields) {
+    const out: Record<string, unknown> = {};
+    for (const [key, nested] of Object.entries(value.mapValue.fields)) {
+      out[key] = fromFirestoreValue(nested);
+    }
+    return out;
+  }
+  return null;
+}
+
+function fromFirestoreDocument(doc: FirestoreDocument): Record<string, unknown> {
+  const out: Record<string, unknown> = {};
+  for (const [key, value] of Object.entries(doc.fields || {})) {
+    out[key] = fromFirestoreValue(value);
+  }
+  return out;
+}
 
 export type { ListResponse };

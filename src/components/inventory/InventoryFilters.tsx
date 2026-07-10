@@ -1,5 +1,7 @@
+import { useState } from 'react';
 import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { ExpiryToneChip } from '@components/inventory/ExpiryBadge';
+import { fieldBorder, webTextInputReset } from '@constants/inputStyles';
 import { colors, spacing } from '@constants/theme';
 import { toggleTone } from '@utils/inventory';
 import type {
@@ -32,6 +34,8 @@ const SORTS: { value: InventorySortKey; label: string }[] = [
 const TONES: ExpiryTone[] = ['green', 'amber', 'red'];
 
 export function InventoryFiltersBar({ filters, suppliers, onChange }: Props) {
+  const [searchFocused, setSearchFocused] = useState(false);
+
   return (
     <View style={styles.wrap}>
       <TextInput
@@ -39,9 +43,11 @@ export function InventoryFiltersBar({ filters, suppliers, onChange }: Props) {
         onChangeText={(search) => onChange({ ...filters, search })}
         placeholder="Search ingredient…"
         placeholderTextColor={colors.textSecondary}
-        style={styles.search}
+        style={[styles.search, webTextInputReset, searchFocused ? styles.searchFocused : null]}
         autoCapitalize="none"
         autoCorrect={false}
+        onFocus={() => setSearchFocused(true)}
+        onBlur={() => setSearchFocused(false)}
       />
 
       <Text style={styles.section}>Visibility</Text>
@@ -132,8 +138,8 @@ const styles = StyleSheet.create({
     marginBottom: spacing.md,
   },
   search: {
-    borderWidth: 1,
-    borderColor: colors.border,
+    borderWidth: 1.5,
+    borderColor: fieldBorder.idle,
     backgroundColor: colors.surface,
     borderRadius: 12,
     paddingHorizontal: spacing.md,
@@ -141,6 +147,9 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: colors.text,
     marginBottom: spacing.sm,
+  },
+  searchFocused: {
+    borderColor: fieldBorder.focused,
   },
   section: {
     fontSize: 12,

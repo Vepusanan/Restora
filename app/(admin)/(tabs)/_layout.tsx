@@ -1,74 +1,80 @@
-import { Tabs } from 'expo-router';
-import { Text, View } from 'react-native';
-import { UnreadBadge } from '@components/notifications/UnreadBadge';
-import { useUnreadNotificationCount } from '@hooks/useUnreadNotificationCount';
+import { Tabs, useRouter } from 'expo-router';
+import { FloatingTabBar } from '@components/chrome/FloatingTabBar';
+import { HeaderBackButton } from '@components/chrome/HeaderBackButton';
 import { colors } from '@constants/theme';
 
-function TabLabel({ label, color }: { label: string; color: string }) {
-  return <Text style={{ color, fontSize: 12, fontWeight: '600' }}>{label}</Text>;
-}
-
-function InboxLabel({ color }: { color: string }) {
-  const unread = useUnreadNotificationCount();
-  return (
-    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
-      <TabLabel label="Inbox" color={color} />
-      <UnreadBadge count={unread} />
-    </View>
-  );
-}
-
 export default function AdminTabsLayout() {
+  const router = useRouter();
+
   return (
     <Tabs
+      tabBar={(props) => (
+        <FloatingTabBar
+          {...props}
+          visibleRouteNames={['index', 'inventory', 'waste', 'more']}
+          fab={{
+            icon: 'add',
+            label: 'Add batch',
+            onPress: () => router.push('/(admin)/add-batch'),
+            onLongPress: () => router.push('/(admin)/log-waste'),
+          }}
+        />
+      )}
       screenOptions={{
         headerStyle: { backgroundColor: colors.surface },
-        headerTintColor: colors.primary,
-        tabBarActiveTintColor: colors.primary,
-        tabBarInactiveTintColor: colors.textSecondary,
-        tabBarStyle: { backgroundColor: colors.surface },
+        headerTintColor: colors.forest,
+        headerTitleStyle: { fontWeight: '700' },
+        sceneStyle: { backgroundColor: colors.background },
       }}
     >
       <Tabs.Screen
         name="index"
         options={{
-          title: 'Dashboard',
-          tabBarLabel: ({ color }) => <TabLabel label="Home" color={color} />,
+          title: 'Home',
+          headerShown: false,
         }}
       />
       <Tabs.Screen
         name="inventory"
         options={{
           title: 'Inventory',
-          tabBarLabel: ({ color }) => <TabLabel label="Inventory" color={color} />,
         }}
       />
       <Tabs.Screen
         name="waste"
         options={{
           title: 'Waste',
-          tabBarLabel: ({ color }) => <TabLabel label="Waste" color={color} />,
+        }}
+      />
+      <Tabs.Screen
+        name="more"
+        options={{
+          title: 'More',
+          headerShown: false,
         }}
       />
       <Tabs.Screen
         name="inbox"
         options={{
           title: 'Inbox',
-          tabBarLabel: ({ color }) => <InboxLabel color={color} />,
+          href: null,
+          headerLeft: () => <HeaderBackButton />,
         }}
       />
       <Tabs.Screen
         name="analytics"
         options={{
           title: 'Analytics',
-          tabBarLabel: ({ color }) => <TabLabel label="Analytics" color={color} />,
+          href: null,
+          headerLeft: () => <HeaderBackButton />,
         }}
       />
       <Tabs.Screen
         name="ai"
         options={{
           title: 'AI Assistant',
-          tabBarLabel: ({ color }) => <TabLabel label="AI" color={color} />,
+          href: null,
+          headerLeft: () => <HeaderBackButton />,
         }}
       />
     </Tabs>

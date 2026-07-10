@@ -9,14 +9,19 @@ import {
   TextInput,
   View,
 } from 'react-native';
-import { Button } from '@components/ui/Button';
+import { useState } from 'react';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { Icon } from '@components/ui/Icon';
 import { InlineError } from '@components/ui/InlineError';
 import { useAiAssistant } from '@hooks/useAiAssistant';
 import { useAuth } from '@hooks/useAuth';
-import { colors, spacing } from '@constants/theme';
+import { fieldBorder, webTextInputReset } from '@constants/inputStyles';
+import { colors, radius, spacing, TAB_BAR_CLEARANCE } from '@constants/theme';
 
 export function AiAssistantScreen() {
+  const insets = useSafeAreaInsets();
   const { profile, isAdmin } = useAuth();
+  const [inputFocused, setInputFocused] = useState(false);
   const {
     messages,
     history,
@@ -29,6 +34,9 @@ export function AiAssistantScreen() {
     clearConversation,
     reuseHistoryItem,
   } = useAiAssistant();
+
+  const canSend = input.trim().length > 0 && !loading;
+  const composerPad = TAB_BAR_CLEARANCE + Math.max(insets.bottom, 0);
 
   return (
     <KeyboardAvoidingView
@@ -105,37 +113,75 @@ export function AiAssistantScreen() {
         ListFooterComponent={
           loading ? (
             <View style={styles.loadingRow}>
-              <ActivityIndicator color={colors.primary} />
+              <ActivityIndicator color={colors.forest} />
               <Text style={styles.loadingText}>Analyzing your data…</Text>
             </View>
           ) : null
         }
       />
 
-      <View style={styles.composer}>
-        <TextInput
-          style={styles.input}
-          value={input}
-          onChangeText={setInput}
-          placeholder="Ask Restora AI…"
-          placeholderTextColor={colors.textSecondary}
-          editable={!loading}
-          multiline
-          maxLength={2000}
-        />
-        <View style={styles.actions}>
-          <View style={styles.actionGrow}>
-            <Button
-              title="Clear chat"
-              variant="ghost"
-              onPress={clearConversation}
-              disabled={loading || messages.length === 0}
-            />
-          </View>
-          <View style={styles.actionGrow}>
-            <Button title="Send" onPress={() => void ask()} loading={loading} />
-          </View>
+      <View style={[styles.composer, { paddingBottom: spacing.md + 8 }]}>
+        <View style={styles.composerRow}>
+          <TextInput
+            style={[
+              styles.input,
+              webTextInputReset,
+              inputFocused ? styles.inputFocused : null,
+            ]}
+            value={input}
+            onChangeText={setInput}
+            placeholder="Ask Restora AI…"
+            placeholderTextColor={colors.textSecondary}
+            editable={!loading}
+            multiline
+            maxLength={2000}
+            onFocus={() => setInputFocused(true)}
+            onBlur={() => setInputFocused(false)}
+            onSubmitEditing={() => {
+              if (canSend) void ask();
+            }}
+          />
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Send message"
+            disabled={!canSend}
+            onPress={() => void ask()}
+            style={({ pressed }) => [
+              styles.sendBtn,
+              !canSend ? styles.sendDisabled : null,
+              pressed && canSend ? styles.sendPressed : null,
+            ]}
+          >
+            {loading ? (
+              <ActivityIndicator color={colors.textOnLime} />
+            ) : (
+              <Icon name="send" size={20} color={colors.textOnLime} />
+            )}
+          </Pressable>
         </View>
+
+        <Pressable
+          onPress={clearConversation}
+          disabled={loading || messages.length === 0}
+          style={styles.clearRow}
+        >
+          <Icon
+            name="trash-outline"
+            size={14}
+            color={messages.length === 0 ? colors.borderStrong : colors.textSecondary}
+          />
+          <Text
+            style={[
+              styles.clearText,
+              messages.length === 0 ? styles.clearDisabled : null,
+            ]}
+          >
+            Clear chat
+          </Text>
+        </Pressable>
+
+        {/* Keeps composer above the floating tab bar */}
+        <View style={{ height: composerPad - spacing.md }} />
       </View>
     </KeyboardAvoidingView>
   );
@@ -144,9 +190,9 @@ export function AiAssistantScreen() {
 const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: colors.background },
   header: { paddingHorizontal: spacing.lg, paddingTop: spacing.lg, gap: 4 },
-  title: { fontSize: 28, fontWeight: '800', color: colors.text },
+  title: { fontSize: 28, fontWeight: '800', color: colors.forest },
   subtitle: { fontSize: 14, color: colors.textSecondary, lineHeight: 20 },
-  meta: { fontSize: 12, color: colors.primary, fontWeight: '600' },
+  meta: { fontSize: 12, color: colors.forest, fontWeight: '600' },
   history: { paddingTop: spacing.sm },
   historyHeader: {
     paddingHorizontal: spacing.lg,
@@ -155,7 +201,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   section: { fontSize: 13, fontWeight: '700', color: colors.text },
-  link: { fontSize: 13, fontWeight: '600', color: colors.primary },
+  link: { fontSize: 13, fontWeight: '600', color: colors.forest },
   historyList: { paddingHorizontal: spacing.lg, paddingVertical: spacing.sm, gap: spacing.sm },
   historyChip: {
     maxWidth: 180,
@@ -187,7 +233,9 @@ const styles = StyleSheet.create({
   },
   userBubble: {
     alignSelf: 'flex-end',
-    backgroundColor: colors.primary,
+    backgroundColor: colors.limeSoft,
+    borderWidth: 1,
+    borderColor: colors.lime,
   },
   assistantBubble: {
     alignSelf: 'flex-start',
@@ -196,7 +244,7 @@ const styles = StyleSheet.create({
     borderColor: colors.border,
   },
   bubbleText: { fontSize: 15, lineHeight: 22 },
-  userText: { color: '#FFFFFF' },
+  userText: { color: colors.textOnLime },
   assistantText: { color: colors.text },
   loadingRow: {
     flexDirection: 'row',
@@ -209,20 +257,59 @@ const styles = StyleSheet.create({
     borderTopWidth: 1,
     borderTopColor: colors.border,
     backgroundColor: colors.surface,
-    padding: spacing.md,
+    paddingHorizontal: spacing.md,
+    paddingTop: spacing.md,
+  },
+  composerRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-end',
     gap: spacing.sm,
   },
   input: {
+    flex: 1,
     minHeight: 48,
     maxHeight: 120,
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: 12,
+    borderWidth: 1.5,
+    borderColor: fieldBorder.idle,
+    borderRadius: radius.lg,
     paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm,
+    paddingVertical: 12,
     color: colors.text,
     fontSize: 15,
+    backgroundColor: colors.background,
   },
-  actions: { flexDirection: 'row', gap: spacing.sm },
-  actionGrow: { flex: 1 },
+  inputFocused: {
+    borderColor: fieldBorder.focused,
+  },
+  sendBtn: {
+    width: 48,
+    height: 48,
+    borderRadius: radius.lg,
+    backgroundColor: colors.lime,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  sendPressed: {
+    backgroundColor: colors.limeDark,
+    transform: [{ scale: 0.96 }],
+  },
+  sendDisabled: {
+    opacity: 0.45,
+  },
+  clearRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    alignSelf: 'flex-start',
+    marginTop: spacing.sm,
+    paddingVertical: 4,
+  },
+  clearText: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: colors.textSecondary,
+  },
+  clearDisabled: {
+    color: colors.borderStrong,
+  },
 });

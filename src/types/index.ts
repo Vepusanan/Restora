@@ -81,7 +81,16 @@ export type {
   AiAskResponse,
 } from './ai';
 
+export type {
+  AiInsightSeverity,
+  AiInsightCategory,
+  AiInsightItem,
+  AiRecommendationItem,
+  AiAnalyticsReport,
+} from './aiAnalytics';
+
 export { AI_HISTORY_LIMIT, AI_REQUEST_TIMEOUT_MS } from './ai';
+export { AI_ANALYTICS_TIMEOUT_MS } from './aiAnalytics';
 
 export type {
   RestaurantCurrency,

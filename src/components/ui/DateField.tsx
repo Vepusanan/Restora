@@ -4,6 +4,7 @@ import DateTimePicker, {
   type DateTimePickerEvent,
 } from '@react-native-community/datetimepicker';
 import { colors, spacing } from '@constants/theme';
+import { fieldBorder } from '@constants/inputStyles';
 import { parseDateOnly, toDateOnlyString } from '@utils/expiry';
 
 type Props = {
@@ -40,7 +41,11 @@ export function DateField({
       <Text style={styles.label}>{label}</Text>
       <Pressable
         onPress={() => setOpen(true)}
-        style={[styles.input, error ? styles.inputError : null]}
+        style={[
+          styles.input,
+          open ? styles.inputFocused : null,
+          error ? styles.inputError : null,
+        ]}
       >
         <Text style={value ? styles.value : styles.placeholder}>
           {value || 'Select date'}
@@ -75,17 +80,18 @@ const styles = StyleSheet.create({
     marginBottom: spacing.xs,
   },
   input: {
-    borderWidth: 1,
-    borderColor: colors.border,
+    borderWidth: 1.5,
+    borderColor: fieldBorder.idle,
     backgroundColor: colors.surface,
     borderRadius: 12,
     paddingHorizontal: spacing.md,
     paddingVertical: 14,
   },
-  inputError: { borderColor: colors.danger },
+  inputFocused: { borderColor: fieldBorder.focused },
+  inputError: { borderColor: fieldBorder.error },
   value: { fontSize: 16, color: colors.text },
   placeholder: { fontSize: 16, color: colors.textSecondary },
   error: { marginTop: spacing.xs, color: colors.danger, fontSize: 13 },
   done: { alignSelf: 'flex-end', paddingVertical: spacing.sm },
-  doneText: { color: colors.primary, fontWeight: '700' },
+  doneText: { color: colors.forest, fontWeight: '700' },
 });

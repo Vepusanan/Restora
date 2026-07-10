@@ -2,6 +2,7 @@ import { FlatList, Pressable, RefreshControl, StyleSheet, Text, View } from 'rea
 import { Stack, useRouter } from 'expo-router';
 import { AuditCard } from '@components/audit/AuditCard';
 import { AuditFiltersBar } from '@components/audit/AuditFiltersBar';
+import { HeaderBackButton } from '@components/chrome/HeaderBackButton';
 import { EmptyState } from '@components/ui/EmptyState';
 import { InlineError } from '@components/ui/InlineError';
 import { LoadingState } from '@components/ui/LoadingState';
@@ -28,7 +29,13 @@ export default function AuditHistoryScreen() {
   if (!isAdmin) {
     return (
       <>
-        <Stack.Screen options={{ title: 'Audit history', headerShown: true }} />
+        <Stack.Screen
+          options={{
+            title: 'Audit history',
+            headerShown: true,
+            headerLeft: () => <HeaderBackButton />,
+          }}
+        />
         <EmptyState title="Admin only" description="Audit history is restricted to restaurant admins." />
       </>
     );
@@ -37,7 +44,13 @@ export default function AuditHistoryScreen() {
   if (loading) {
     return (
       <>
-        <Stack.Screen options={{ title: 'Audit history', headerShown: true }} />
+        <Stack.Screen
+          options={{
+            title: 'Audit history',
+            headerShown: true,
+            headerLeft: () => <HeaderBackButton />,
+          }}
+        />
         <LoadingState message="Loading audit history…" />
       </>
     );
@@ -45,7 +58,13 @@ export default function AuditHistoryScreen() {
 
   return (
     <>
-      <Stack.Screen options={{ title: 'Audit history', headerShown: true }} />
+      <Stack.Screen
+          options={{
+            title: 'Audit history',
+            headerShown: true,
+            headerLeft: () => <HeaderBackButton />,
+          }}
+        />
       <View style={styles.screen}>
         <FlatList
           data={items}

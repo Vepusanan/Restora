@@ -31,10 +31,12 @@ export default function StaffLayout() {
     <Stack
       screenOptions={{
         headerStyle: { backgroundColor: colors.surface },
-        headerTintColor: colors.primary,
+        headerTintColor: colors.forest,
         headerTitleStyle: { fontWeight: '700' },
         contentStyle: { backgroundColor: colors.background },
       }}
-    />
+    >
+      <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+    </Stack>
   );
 }

@@ -10,17 +10,18 @@ import {
   Text,
   View,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { BrandHeader } from '@components/auth/BrandHeader';
 import { Button } from '@components/ui/Button';
 import { Input } from '@components/ui/Input';
 import { InlineError } from '@components/ui/InlineError';
 import { useAuthStore } from '@store/authStore';
 import { loginSchema, type LoginFormValues } from '@utils/validators';
-import { colors, spacing } from '@constants/theme';
+import { colors, radius, spacing } from '@constants/theme';
 import type { ServiceError } from '@/types';
 
 export default function LoginScreen() {
+  const insets = useSafeAreaInsets();
   const login = useAuthStore((s) => s.login);
   const status = useAuthStore((s) => s.status);
   const error = useAuthStore((s) => s.error);
@@ -47,14 +48,26 @@ export default function LoginScreen() {
     }
   });
 
+  const topPad = Math.max(insets.top, spacing.md) + spacing.lg;
+
   return (
-    <SafeAreaView style={styles.safe}>
+    <View style={styles.root}>
+      <View style={[styles.top, { paddingTop: topPad, paddingBottom: spacing.xl }]}>
+        <BrandHeader variant="dark" subtitle="Sign in to continue" />
+      </View>
+
       <KeyboardAvoidingView
         style={styles.flex}
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       >
-        <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
-          <BrandHeader subtitle="Sign in to continue" />
+        <ScrollView
+          style={styles.sheet}
+          contentContainerStyle={[
+            styles.content,
+            { paddingBottom: Math.max(insets.bottom, spacing.lg) + spacing.lg },
+          ]}
+          keyboardShouldPersistTaps="handled"
+        >
           <InlineError message={error?.message} />
 
           <Controller
@@ -63,6 +76,7 @@ export default function LoginScreen() {
             render={({ field: { onChange, onBlur, value } }) => (
               <Input
                 label="Email"
+                leftIcon="mail-outline"
                 value={value}
                 onChangeText={onChange}
                 onBlur={onBlur}
@@ -80,6 +94,7 @@ export default function LoginScreen() {
             render={({ field: { onChange, onBlur, value } }) => (
               <Input
                 label="Password"
+                leftIcon="lock-closed-outline"
                 value={value}
                 onChangeText={onChange}
                 onBlur={onBlur}
@@ -91,7 +106,12 @@ export default function LoginScreen() {
             )}
           />
 
-          <Button title="Sign in" onPress={onSubmit} loading={status === 'loading'} />
+          <Button
+            title="Sign in"
+            icon="log-in-outline"
+            onPress={onSubmit}
+            loading={status === 'loading'}
+          />
 
           <View style={styles.links}>
             <Link href="/(auth)/forgot-password" style={styles.link}>
@@ -112,17 +132,27 @@ export default function LoginScreen() {
           </View>
         </ScrollView>
       </KeyboardAvoidingView>
-    </SafeAreaView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: colors.background },
+  root: { flex: 1, backgroundColor: colors.forest },
+  top: {
+    backgroundColor: colors.forest,
+    paddingHorizontal: spacing.lg,
+  },
   flex: { flex: 1 },
+  sheet: {
+    flex: 1,
+    backgroundColor: colors.background,
+    borderTopLeftRadius: radius.xl,
+    borderTopRightRadius: radius.xl,
+  },
   content: {
     flexGrow: 1,
-    padding: spacing.lg,
-    justifyContent: 'center',
+    paddingHorizontal: spacing.lg,
+    paddingTop: spacing.xl,
   },
   links: {
     marginTop: spacing.lg,
@@ -130,8 +160,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   link: {
-    color: colors.primary,
-    fontWeight: '600',
+    color: colors.forest,
+    fontWeight: '700',
     fontSize: 15,
   },
   muted: {

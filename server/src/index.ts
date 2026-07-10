@@ -8,6 +8,8 @@ import {
   staffFinancialRefusal,
 } from './services/permissionFilter';
 import { askGemini } from './services/geminiService';
+import { buildAiAnalyticsContext } from './services/analyticsContextBuilder';
+import { generateAiAnalytics } from './services/aiAnalyticsService';
 
 assertServerEnv();
 
@@ -18,6 +20,81 @@ app.use(express.json({ limit: '256kb' }));
 app.get('/health', (_req, res) => {
   res.json({ ok: true, service: 'restora-ai' });
 });
+
+async function requireApprovedAdmin(req: express.Request, res: express.Response) {
+  const authHeader = String(req.headers.authorization || '');
+  const idToken = authHeader.startsWith('Bearer ')
+    ? authHeader.slice(7).trim()
+    : '';
+  if (!idToken) {
+    res.status(401).json({
+      code: 'unauthenticated',
+      message: 'Sign in required to use AI features',
+    });
+    return null;
+  }
+
+  const authUser = await verifyFirebaseIdToken(idToken);
+  const profile = await firestoreUserApi.getUserProfile(idToken, authUser.uid);
+  if (!profile || profile.status !== 'approved') {
+    res.status(403).json({
+      code: 'permission-denied',
+      message: 'Approved account required',
+    });
+    return null;
+  }
+  if (!profile.restaurantId) {
+    res.status(403).json({
+      code: 'permission-denied',
+      message: 'Restaurant membership required',
+    });
+    return null;
+  }
+  if (profile.role !== 'admin') {
+    res.status(403).json({
+      code: 'permission-denied',
+      message: 'AI Analytics is available to restaurant admins only.',
+    });
+    return null;
+  }
+
+  return { idToken, profile };
+}
+
+function sendAiError(res: express.Response, error: unknown, label: string) {
+  const message = error instanceof Error ? error.message : 'AI request failed';
+  const lower = message.toLowerCase();
+  const timedOut = lower.includes('abort') || lower.includes('timeout');
+  const quota =
+    lower.includes('429') ||
+    lower.includes('quota') ||
+    lower.includes('resource_exhausted') ||
+    lower.includes('too many requests');
+
+  console.error(label, message);
+
+  if (timedOut) {
+    res.status(504).json({
+      code: 'deadline-exceeded',
+      message: 'AI analytics unavailable. Please try again.',
+    });
+    return;
+  }
+
+  if (quota) {
+    res.status(429).json({
+      code: 'resource-exhausted',
+      message:
+        'Gemini API quota exceeded for this key. Wait for the quota reset or create a new key in Google AI Studio, then update server/.env (GEMINI_API_KEY).',
+    });
+    return;
+  }
+
+  res.status(500).json({
+    code: 'internal',
+    message: 'AI analytics unavailable. Please try again.',
+  });
+}
 
 /**
  * FR-042–046 — authenticated AI ask endpoint.
@@ -67,7 +144,6 @@ app.post('/ai/ask', async (req, res) => {
       return;
     }
 
-    // Hard refuse staff financial questions before calling Gemini (FR-045).
     if (profile.role === 'staff') {
       const refusal = staffFinancialRefusal(query);
       if (refusal) {
@@ -94,7 +170,6 @@ app.post('/ai/ask', async (req, res) => {
 
     const result = await askGemini({ query, context });
 
-    // FR-044 — response only; no Firestore business writes performed.
     res.json({
       text: result.text,
       model: result.model,
@@ -102,38 +177,90 @@ app.post('/ai/ask', async (req, res) => {
       restaurantId: profile.restaurantId,
     });
   } catch (error) {
-    const message = error instanceof Error ? error.message : 'AI request failed';
-    const lower = message.toLowerCase();
-    const timedOut = lower.includes('abort') || lower.includes('timeout');
-    const quota =
-      lower.includes('429') ||
-      lower.includes('quota') ||
-      lower.includes('resource_exhausted') ||
-      lower.includes('too many requests');
+    sendAiError(res, error, 'AI /ai/ask failed');
+  }
+});
 
-    console.error('AI /ai/ask failed', message);
+/**
+ * Admin-only AI Analytics — structured insights over aggregated ops data.
+ * Caches result to aiAnalytics/{restaurantId} for manual refresh UX.
+ */
+app.post('/ai/analytics', async (req, res) => {
+  try {
+    const auth = await requireApprovedAdmin(req, res);
+    if (!auth) return;
+    const { idToken, profile } = auth;
 
-    if (timedOut) {
-      res.status(504).json({
-        code: 'deadline-exceeded',
-        message: 'AI Assistant is currently unavailable. Please try again.',
-      });
-      return;
-    }
+    const startDate = String(req.body?.startDate ?? '').slice(0, 10);
+    const endDate = String(req.body?.endDate ?? '').slice(0, 10);
+    const range =
+      /^\d{4}-\d{2}-\d{2}$/.test(startDate) && /^\d{4}-\d{2}-\d{2}$/.test(endDate)
+        ? { startDate, endDate }
+        : undefined;
 
-    if (quota) {
-      res.status(429).json({
-        code: 'resource-exhausted',
-        message:
-          'Gemini API quota exceeded for this key. Wait for the quota reset or create a new key in Google AI Studio, then update server/.env (GEMINI_API_KEY).',
-      });
-      return;
-    }
+    const [batches, wasteLogs, restaurant] = await Promise.all([
+      firestoreUserApi.listInventory(idToken, profile.restaurantId),
+      firestoreUserApi.listWaste(idToken, profile.restaurantId),
+      firestoreUserApi.getRestaurant(idToken, profile.restaurantId),
+    ]);
 
-    res.status(500).json({
-      code: 'internal',
-      message: 'AI Assistant is currently unavailable. Please try again.',
+    const context = buildAiAnalyticsContext({
+      restaurantId: profile.restaurantId,
+      restaurantName: profile.restaurantName,
+      batches,
+      wasteLogs,
+      settings: restaurant,
+      range,
     });
+
+    const generated = await generateAiAnalytics({
+      context,
+      timeoutMs: serverEnv.analyticsTimeoutMs,
+    });
+
+    const payload = {
+      restaurantId: profile.restaurantId,
+      summary: generated.summary,
+      insights: generated.insights,
+      recommendations: generated.recommendations,
+      model: generated.model,
+      generatedAt: generated.generatedAt,
+      dataRange: generated.dataRange,
+      createdBy: profile.uid,
+      expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
+    };
+
+    try {
+      await firestoreUserApi.saveAiAnalytics(idToken, profile.restaurantId, payload);
+    } catch (cacheError) {
+      console.warn('AI analytics cache write failed', cacheError);
+    }
+
+    res.json(payload);
+  } catch (error) {
+    sendAiError(res, error, 'AI /ai/analytics failed');
+  }
+});
+
+/** Admin-only cached insights read. */
+app.get('/ai/analytics', async (req, res) => {
+  try {
+    const auth = await requireApprovedAdmin(req, res);
+    if (!auth) return;
+    const { idToken, profile } = auth;
+
+    const cached = await firestoreUserApi.getAiAnalytics(idToken, profile.restaurantId);
+    if (!cached) {
+      res.status(404).json({
+        code: 'not-found',
+        message: 'No AI insights generated yet.',
+      });
+      return;
+    }
+
+    res.json(cached);
+  } catch (error) {
+    sendAiError(res, error, 'AI GET /ai/analytics failed');
   }
 });
 

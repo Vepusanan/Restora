@@ -22,6 +22,8 @@ export const routes = {
   adminLogWaste: '/(admin)/log-waste',
   staffHome: '/(staff)/(tabs)',
   staffInventory: '/(staff)/(tabs)/inventory',
+  staffInbox: '/(staff)/(tabs)/inbox',
+  staffSettings: '/(staff)/(tabs)/settings',
   staffWaste: '/(staff)/(tabs)/waste',
   staffAddBatch: '/(staff)/add-batch',
   staffLogWaste: '/(staff)/log-waste',

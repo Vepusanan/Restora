@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import {
   View,
   Text,
@@ -5,23 +6,51 @@ import {
   StyleSheet,
   type TextInputProps,
 } from 'react-native';
-import { colors, spacing } from '@constants/theme';
+import { colors, radius, spacing } from '@constants/theme';
+import { fieldBorder, webTextInputReset } from '@constants/inputStyles';
+import { Icon, type IconName } from './Icon';
 
 type Props = TextInputProps & {
   label: string;
   error?: string;
+  leftIcon?: IconName;
 };
 
-export function Input({ label, error, style, ...props }: Props) {
+export function Input({ label, error, leftIcon, style, onFocus, onBlur, ...props }: Props) {
+  const [focused, setFocused] = useState(false);
+
   return (
     <View style={styles.wrap}>
       <Text style={styles.label}>{label}</Text>
-      <TextInput
-        placeholderTextColor={colors.textSecondary}
-        style={[styles.input, error ? styles.inputError : null, style]}
-        autoCapitalize="none"
-        {...props}
-      />
+      <View
+        style={[
+          styles.field,
+          focused ? styles.fieldFocused : null,
+          error ? styles.fieldError : null,
+        ]}
+      >
+        {leftIcon ? (
+          <Icon
+            name={leftIcon}
+            size={18}
+            color={focused ? colors.forest : colors.textSecondary}
+          />
+        ) : null}
+        <TextInput
+          placeholderTextColor={colors.textSecondary}
+          style={[styles.input, webTextInputReset, style]}
+          autoCapitalize="none"
+          onFocus={(event) => {
+            setFocused(true);
+            onFocus?.(event);
+          }}
+          onBlur={(event) => {
+            setFocused(false);
+            onBlur?.(event);
+          }}
+          {...props}
+        />
+      </View>
       {error ? <Text style={styles.error}>{error}</Text> : null}
     </View>
   );
@@ -37,18 +66,29 @@ const styles = StyleSheet.create({
     color: colors.text,
     marginBottom: spacing.xs,
   },
-  input: {
-    borderWidth: 1,
-    borderColor: colors.border,
+  field: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    borderWidth: 1.5,
+    borderColor: fieldBorder.idle,
     backgroundColor: colors.surface,
-    borderRadius: 12,
+    borderRadius: radius.md,
     paddingHorizontal: spacing.md,
+    minHeight: 52,
+  },
+  fieldFocused: {
+    borderColor: fieldBorder.focused,
+  },
+  fieldError: {
+    borderColor: fieldBorder.error,
+  },
+  input: {
+    flex: 1,
     paddingVertical: 14,
     fontSize: 16,
     color: colors.text,
-  },
-  inputError: {
-    borderColor: colors.danger,
+    backgroundColor: 'transparent',
   },
   error: {
     marginTop: spacing.xs,

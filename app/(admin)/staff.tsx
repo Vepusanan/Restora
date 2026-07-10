@@ -7,6 +7,7 @@ import {
   View,
 } from 'react-native';
 import { Stack } from 'expo-router';
+import { HeaderBackButton } from '@components/chrome/HeaderBackButton';
 import { Avatar } from '@components/auth/AvatarPicker';
 import { Button } from '@components/ui/Button';
 import { ConfirmDialog } from '@components/ui/ConfirmDialog';
@@ -123,7 +124,13 @@ export default function StaffManagementScreen() {
 
   return (
     <>
-      <Stack.Screen options={{ title: 'Staff Management', headerShown: true }} />
+      <Stack.Screen
+        options={{
+          title: 'Staff Management',
+          headerShown: true,
+          headerLeft: () => <HeaderBackButton />,
+        }}
+      />
       <View style={styles.container}>
         <InlineError message={error || undefined} />
 

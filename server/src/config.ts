@@ -7,6 +7,7 @@ export const serverEnv = {
   firebaseApiKey: process.env.FIREBASE_API_KEY || '',
   firebaseProjectId: process.env.FIREBASE_PROJECT_ID || '',
   requestTimeoutMs: 15_000,
+  analyticsTimeoutMs: 45_000,
   maxQueryLength: 2000,
 };
 

@@ -14,7 +14,7 @@ import { EmptyState } from '@components/ui/EmptyState';
 import { InlineError } from '@components/ui/InlineError';
 import { useAuth } from '@hooks/useAuth';
 import { useWasteLogs } from '@hooks/useWasteLogs';
-import { colors, spacing } from '@constants/theme';
+import { colors, spacing, TAB_BAR_CLEARANCE } from '@constants/theme';
 import { formatCostLoss } from '@utils/waste';
 
 type Props = {
@@ -32,7 +32,7 @@ export function WasteScreen({ basePath }: Props) {
   if (loading) {
     return (
       <View style={styles.loader}>
-        <ActivityIndicator size="large" color={colors.primary} />
+        <ActivityIndicator size="large" color={colors.forest} />
       </View>
     );
   }
@@ -74,6 +74,7 @@ export function WasteScreen({ basePath }: Props) {
             <View style={styles.actionGrow}>
               <Button
                 title="Log waste"
+                icon="trash-outline"
                 onPress={() => router.push(`${basePath}/log-waste` as never)}
               />
             </View>
@@ -81,6 +82,7 @@ export function WasteScreen({ basePath }: Props) {
               <Button
                 title={filtersOpen ? 'Hide filters' : 'Filters'}
                 variant="secondary"
+                icon="options-outline"
                 onPress={() => setFiltersOpen((v) => !v)}
               />
             </View>
@@ -99,6 +101,7 @@ export function WasteScreen({ basePath }: Props) {
           description="Log waste against an inventory batch to track quantity and cost loss."
           actionLabel="Log waste"
           onAction={() => router.push(`${basePath}/log-waste` as never)}
+          icon="trash-outline"
         />
       }
       renderItem={({ item }) => (
@@ -114,7 +117,7 @@ export function WasteScreen({ basePath }: Props) {
 
 const styles = StyleSheet.create({
   list: { flex: 1, backgroundColor: colors.background },
-  content: { padding: spacing.lg, paddingBottom: spacing.xl },
+  content: { padding: spacing.lg, paddingBottom: TAB_BAR_CLEARANCE + spacing.lg },
   loader: {
     flex: 1,
     alignItems: 'center',
@@ -122,7 +125,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.background,
   },
   header: { marginBottom: spacing.md, gap: spacing.sm },
-  title: { fontSize: 28, fontWeight: '800', color: colors.text },
+  title: { fontSize: 28, fontWeight: '800', color: colors.forest },
   subtitle: { fontSize: 14, color: colors.textSecondary },
   summaryRow: { flexDirection: 'row', gap: spacing.sm },
   summaryCard: {

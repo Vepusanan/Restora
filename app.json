@@ -11,7 +11,7 @@
     "splash": {
       "image": "./assets/splash-icon.png",
       "resizeMode": "contain",
-      "backgroundColor": "#0F766E"
+      "backgroundColor": "#0B3D2E"
     },
     "ios": {
       "supportsTablet": true,
@@ -20,7 +20,7 @@
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
-        "backgroundColor": "#0F766E"
+        "backgroundColor": "#0B3D2E"
       },
       "edgeToEdgeEnabled": true,
       "package": "com.restora.app",
@@ -46,7 +46,7 @@
         "expo-notifications",
         {
           "icon": "./assets/icon.png",
-          "color": "#0F766E",
+          "color": "#0B3D2E",
           "defaultChannel": "expiry-alerts"
         }
       ]

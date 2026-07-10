@@ -13,6 +13,8 @@ export const COLLECTIONS = {
   costs: 'costs',
   analytics: 'analytics',
   financialSummaries: 'financialSummaries',
+  /** Admin-only cached Gemini analytics insights */
+  aiAnalytics: 'aiAnalytics',
 } as const;
 
 /** @deprecated Use COLLECTIONS.users */

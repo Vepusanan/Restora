@@ -1,10 +1,11 @@
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import { Stack, useRouter } from 'expo-router';
 import { Avatar } from '@components/auth/AvatarPicker';
+import { HeaderBackButton } from '@components/chrome/HeaderBackButton';
 import { Button } from '@components/ui/Button';
 import { SettingsCard } from '@components/settings/SettingsCard';
 import { useAuth } from '@hooks/useAuth';
-import { colors, spacing } from '@constants/theme';
+import { colors, spacing, TAB_BAR_CLEARANCE } from '@constants/theme';
 
 type Props = {
   role: 'admin' | 'staff';
@@ -17,8 +18,22 @@ export function SettingsHubScreen({ role }: Props) {
 
   return (
     <>
-      <Stack.Screen options={{ title: 'Settings', headerShown: true }} />
-      <ScrollView style={styles.screen} contentContainerStyle={styles.content}>
+      <Stack.Screen
+        options={{
+          title: 'Settings',
+          headerShown: true,
+          ...(role === 'admin'
+            ? { headerLeft: () => <HeaderBackButton /> }
+            : null),
+        }}
+      />
+      <ScrollView
+        style={styles.screen}
+        contentContainerStyle={[
+          styles.content,
+          role === 'staff' ? { paddingBottom: TAB_BAR_CLEARANCE + spacing.lg } : null,
+        ]}
+      >
         <SettingsCard title="Account">
           <View style={styles.preview}>
             <Avatar
@@ -35,13 +50,23 @@ export function SettingsHubScreen({ role }: Props) {
           </View>
           <Button
             title="Edit profile"
+            icon="person-outline"
             onPress={() => router.push(`${prefix}/profile` as never)}
           />
           <Button
             title="Notification preferences"
             variant="secondary"
+            icon="notifications-outline"
             onPress={() => router.push(`${prefix}/notification-settings` as never)}
           />
+          {role === 'staff' ? (
+            <Button
+              title="AI Assistant"
+              variant="secondary"
+              icon="sparkles-outline"
+              onPress={() => router.push('/(staff)/(tabs)/ai' as never)}
+            />
+          ) : null}
         </SettingsCard>
 
         {role === 'admin' ? (
@@ -52,6 +77,7 @@ export function SettingsHubScreen({ role }: Props) {
             <Button
               title="Restaurant settings"
               variant="secondary"
+              icon="storefront-outline"
               onPress={() => router.push('/(admin)/restaurant-settings' as never)}
             />
           </SettingsCard>

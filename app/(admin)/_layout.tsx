@@ -1,4 +1,5 @@
 import { Redirect, Stack } from 'expo-router';
+import { HeaderBackButton } from '@components/chrome/HeaderBackButton';
 import { LoadingState } from '@components/ui/LoadingState';
 import { useAccessControl } from '@hooks/useAccessControl';
 import { routes } from '@navigation/routes';
@@ -24,17 +25,48 @@ export default function AdminLayout() {
   }
 
   if (access.state === 'authenticated' && access.role !== 'admin') {
-    return <Redirect href={routes.staffInventory} />;
+    return <Redirect href={routes.staffHome} />;
   }
 
   return (
     <Stack
       screenOptions={{
         headerStyle: { backgroundColor: colors.surface },
-        headerTintColor: colors.primary,
+        headerTintColor: colors.forest,
         headerTitleStyle: { fontWeight: '700' },
         contentStyle: { backgroundColor: colors.background },
       }}
-    />
+    >
+      <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+      {/* More-hub destinations always return to More, not Home */}
+      <Stack.Screen
+        name="cost"
+        options={{
+          title: 'Cost & expense',
+          headerLeft: () => <HeaderBackButton />,
+        }}
+      />
+      <Stack.Screen
+        name="staff"
+        options={{
+          title: 'Staff',
+          headerLeft: () => <HeaderBackButton />,
+        }}
+      />
+      <Stack.Screen
+        name="audit"
+        options={{
+          title: 'Audit history',
+          headerLeft: () => <HeaderBackButton />,
+        }}
+      />
+      <Stack.Screen
+        name="settings"
+        options={{
+          title: 'Settings',
+          headerLeft: () => <HeaderBackButton />,
+        }}
+      />
+    </Stack>
   );
 }

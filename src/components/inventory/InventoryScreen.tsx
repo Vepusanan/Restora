@@ -16,7 +16,7 @@ import { EmptyState } from '@components/ui/EmptyState';
 import { InlineError } from '@components/ui/InlineError';
 import { useAuth } from '@hooks/useAuth';
 import { useInventory } from '@hooks/useInventory';
-import { colors, spacing } from '@constants/theme';
+import { colors, spacing, TAB_BAR_CLEARANCE } from '@constants/theme';
 import type { IngredientGroup } from '@/types';
 
 type Props = {
@@ -62,12 +62,13 @@ export function InventoryScreen({ basePath }: Props) {
 
         <View style={styles.actions}>
           <View style={styles.actionGrow}>
-            <Button title="Add batch" onPress={openAdd} />
+            <Button title="Add batch" icon="add" onPress={openAdd} />
           </View>
           <View style={styles.actionGrow}>
             <Button
               title={filtersOpen ? 'Hide filters' : 'Filters'}
               variant="secondary"
+              icon="options-outline"
               onPress={() => setFiltersOpen((v) => !v)}
             />
           </View>
@@ -77,8 +78,9 @@ export function InventoryScreen({ basePath }: Props) {
           <View style={styles.actions}>
             <View style={styles.actionGrow}>
               <Button
-                title="Expiry settings"
+                title="Expiry"
                 variant="ghost"
+                icon="settings-outline"
                 onPress={() => router.push('/(admin)/restaurant-settings' as never)}
               />
             </View>
@@ -86,6 +88,7 @@ export function InventoryScreen({ basePath }: Props) {
               <Button
                 title="Alerts"
                 variant="ghost"
+                icon="notifications-outline"
                 onPress={() => router.push('/(admin)/(tabs)/inbox' as never)}
               />
             </View>
@@ -120,7 +123,7 @@ export function InventoryScreen({ basePath }: Props) {
   if (loading) {
     return (
       <View style={styles.loader}>
-        <ActivityIndicator size="large" color={colors.primary} />
+        <ActivityIndicator size="large" color={colors.forest} />
       </View>
     );
   }
@@ -138,6 +141,7 @@ export function InventoryScreen({ basePath }: Props) {
           description="Create your first batch to start FIFO tracking and expiry monitoring."
           actionLabel="Add batch"
           onAction={openAdd}
+          icon="cube-outline"
         />
       }
       renderItem={({ item }: { item: IngredientGroup }) => (
@@ -168,7 +172,7 @@ export function InventoryScreen({ basePath }: Props) {
 
 const styles = StyleSheet.create({
   list: { flex: 1, backgroundColor: colors.background },
-  content: { padding: spacing.lg, paddingBottom: spacing.xl },
+  content: { padding: spacing.lg, paddingBottom: TAB_BAR_CLEARANCE + spacing.lg },
   loader: {
     flex: 1,
     alignItems: 'center',
@@ -176,7 +180,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.background,
   },
   header: { marginBottom: spacing.md, gap: spacing.sm },
-  title: { fontSize: 28, fontWeight: '800', color: colors.text },
+  title: { fontSize: 28, fontWeight: '800', color: colors.forest },
   subtitle: { fontSize: 14, color: colors.textSecondary },
   actions: { flexDirection: 'row', gap: spacing.sm, marginTop: spacing.sm },
   actionGrow: { flex: 1 },

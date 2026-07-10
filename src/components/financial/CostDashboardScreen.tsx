@@ -1,5 +1,6 @@
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { Stack, useRouter } from 'expo-router';
+import { HeaderBackButton } from '@components/chrome/HeaderBackButton';
 import { InventoryValuationCard } from '@components/financial/InventoryValuationCard';
 import { CostBreakdownChart } from '@components/financial/CostBreakdownChart';
 import { FinancialAccessDenied } from '@components/financial/FinancialAccessDenied';
@@ -37,7 +38,13 @@ export function CostDashboardScreen() {
 
   return (
     <>
-      <Stack.Screen options={{ title: 'Cost & Expense', headerShown: true }} />
+      <Stack.Screen
+        options={{
+          title: 'Cost & Expense',
+          headerShown: true,
+          headerLeft: () => <HeaderBackButton />,
+        }}
+      />
       <ScrollView style={styles.screen} contentContainerStyle={styles.content}>
         <Text style={styles.title}>Cost dashboard</Text>
         <Text style={styles.subtitle}>

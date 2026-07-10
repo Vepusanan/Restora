@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { DateField } from '@components/ui/DateField';
 import {
@@ -6,6 +7,7 @@ import {
   AUDIT_MODULE_LABELS,
   AUDIT_MODULES,
 } from '@constants/audit';
+import { fieldBorder, webTextInputReset } from '@constants/inputStyles';
 import { colors, spacing } from '@constants/theme';
 import type {
   AuditAction,
@@ -25,16 +27,20 @@ type Props = {
 const ACTIONS = Object.keys(AUDIT_ACTION_LABELS) as AuditAction[];
 
 export function AuditFiltersBar({ filters, actors, onChange }: Props) {
+  const [searchFocused, setSearchFocused] = useState(false);
+
   return (
     <View style={styles.wrap}>
       <TextInput
-        style={styles.search}
+        style={[styles.search, webTextInputReset, searchFocused ? styles.searchFocused : null]}
         placeholder="Search user, entity, action…"
         placeholderTextColor={colors.textSecondary}
         value={filters.search}
         onChangeText={(search) => onChange({ search })}
         autoCapitalize="none"
         autoCorrect={false}
+        onFocus={() => setSearchFocused(true)}
+        onBlur={() => setSearchFocused(false)}
       />
 
       <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.row}>
@@ -150,14 +156,17 @@ function Chip({
 const styles = StyleSheet.create({
   wrap: { gap: spacing.sm, marginBottom: spacing.md },
   search: {
-    borderWidth: 1,
-    borderColor: colors.border,
+    borderWidth: 1.5,
+    borderColor: fieldBorder.idle,
     backgroundColor: colors.surface,
     borderRadius: 12,
     paddingHorizontal: 14,
     paddingVertical: 12,
     fontSize: 15,
     color: colors.text,
+  },
+  searchFocused: {
+    borderColor: fieldBorder.focused,
   },
   row: { gap: spacing.sm, paddingRight: spacing.md },
   chip: {

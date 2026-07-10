@@ -8,6 +8,7 @@ import {
   Text,
   View,
 } from 'react-native';
+import { AiInsightsPanel } from '@components/analytics/AiInsightsPanel';
 import { AnalyticsSummaryCards } from '@components/analytics/AnalyticsSummaryCards';
 import { TopWastedTable } from '@components/analytics/TopWastedTable';
 import { WasteTrendChart } from '@components/analytics/WasteTrendChart';
@@ -18,11 +19,12 @@ import { InventoryValuationCard } from '@components/financial/InventoryValuation
 import { Button } from '@components/ui/Button';
 import { InlineError } from '@components/ui/InlineError';
 import { SelectField } from '@components/ui/SelectField';
+import { useAiAnalytics } from '@hooks/useAiAnalytics';
 import { useAnalyticsDashboard } from '@hooks/useAnalyticsDashboard';
 import { useAuth } from '@hooks/useAuth';
 import { useRestaurantSettings } from '@hooks/useRestaurantSettings';
 import { analyticsExportService } from '@services/analytics-export.service';
-import { colors, spacing } from '@constants/theme';
+import { colors, spacing, TAB_BAR_CLEARANCE } from '@constants/theme';
 import type { AggregationPeriod, AnalyticsExportFormat, ServiceError } from '@/types';
 
 const PERIOD_OPTIONS: { value: AggregationPeriod; label: string }[] = [
@@ -64,6 +66,8 @@ export function AnalyticsDashboardScreen() {
     lastUpdated,
     snapshot,
   } = useAnalyticsDashboard(profile?.restaurantId);
+
+  const ai = useAiAnalytics(profile?.restaurantId);
 
   const [exportFormat, setExportFormat] = useState<AnalyticsExportFormat>('csv');
   const [exporting, setExporting] = useState(false);
@@ -126,6 +130,15 @@ export function AnalyticsDashboardScreen() {
           { label: 'Waste cost', value: totalWasteCost, tone: 'danger' },
           { label: 'Ingredient cost', value: totalIngredientCost },
         ]}
+      />
+
+      <AiInsightsPanel
+        report={ai.report}
+        loadingCache={ai.loadingCache}
+        generating={ai.generating}
+        error={ai.error}
+        range={range}
+        onGenerate={() => void ai.generate(range)}
       />
 
       <InventoryValuationCard
@@ -202,7 +215,7 @@ export function AnalyticsDashboardScreen() {
 
 const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: colors.background },
-  content: { padding: spacing.lg, gap: spacing.md, paddingBottom: spacing.xl },
+  content: { padding: spacing.lg, gap: spacing.md, paddingBottom: TAB_BAR_CLEARANCE + spacing.lg },
   loader: {
     flex: 1,
     alignItems: 'center',
@@ -211,7 +224,7 @@ const styles = StyleSheet.create({
     gap: spacing.sm,
   },
   loadingText: { color: colors.textSecondary },
-  title: { fontSize: 28, fontWeight: '800', color: colors.text },
+  title: { fontSize: 28, fontWeight: '800', color: colors.forest },
   subtitle: { fontSize: 14, color: colors.textSecondary, lineHeight: 20 },
   section: { gap: spacing.xs },
   sectionTitle: { fontSize: 16, fontWeight: '700', color: colors.text },
@@ -224,9 +237,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.md,
     paddingVertical: 8,
   },
-  chipSelected: { borderColor: colors.primary, backgroundColor: colors.primaryLight },
+  chipSelected: { borderColor: colors.forest, backgroundColor: colors.limeSoft },
   chipText: { color: colors.textSecondary, fontWeight: '600', fontSize: 13 },
-  chipTextSelected: { color: colors.primaryDark },
+  chipTextSelected: { color: colors.forest },
   exportCard: {
     backgroundColor: colors.surface,
     borderRadius: 16,
