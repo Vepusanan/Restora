@@ -4,10 +4,16 @@ import { authService } from '@services/auth.service';
 import { userService } from '@services/user.service';
 import { useAuthStore } from '@store/authStore';
 import { isFirebaseConfigured } from '@config/env';
+import { usePushNotifications } from '@hooks/usePushNotifications';
 
 type Props = {
   children: ReactNode;
 };
+
+function PushNotificationsBridge() {
+  usePushNotifications();
+  return null;
+}
 
 /**
  * Keeps Firebase Auth + Firestore profile in sync.
@@ -74,7 +80,6 @@ export function AuthProvider({ children }: Props) {
     return unsubscribe;
   }, [user?.uid, setProfile, setProfileLoading, logout]);
 
-  // Detect revoked refresh tokens after deactivation (FR-006 / FR-010).
   useEffect(() => {
     if (!user || !profile || profile.status === 'deactivated') return;
 
@@ -106,5 +111,10 @@ export function AuthProvider({ children }: Props) {
     };
   }, [user, profile, clearSession]);
 
-  return children;
+  return (
+    <>
+      <PushNotificationsBridge />
+      {children}
+    </>
+  );
 }

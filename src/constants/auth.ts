@@ -3,6 +3,7 @@ export const COLLECTIONS = {
   restaurants: 'restaurants',
   restaurantCodes: 'restaurantCodes',
   notifications: 'notifications',
+  notificationHistory: 'notificationHistory',
   inventoryBatches: 'inventoryBatches',
   auditLogs: 'auditLogs',
   waste: 'waste',

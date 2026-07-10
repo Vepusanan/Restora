@@ -41,7 +41,15 @@
           "photosPermission": "Allow Restora to access your photos for profile pictures."
         }
       ],
-      "@react-native-community/datetimepicker"
+      "@react-native-community/datetimepicker",
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/icon.png",
+          "color": "#0F766E",
+          "defaultChannel": "expiry-alerts"
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true

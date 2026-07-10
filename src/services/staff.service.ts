@@ -86,6 +86,7 @@ export const staffService = {
       await updateDoc(doc(getDb(), COLLECTIONS.users, staffUid), {
         status: 'deactivated',
         fcmToken: null,
+        fcmTokens: [],
         updatedAt: serverTimestamp(),
       });
     } catch (fallbackError) {

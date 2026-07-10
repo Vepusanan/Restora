@@ -8,10 +8,11 @@ type Props = {
   batch: InventoryBatch;
   isFifo: boolean;
   now: Date;
+  amberDays?: number;
   onPress: () => void;
 };
 
-export function BatchCard({ batch, isFifo, now, onPress }: Props) {
+export function BatchCard({ batch, isFifo, now, amberDays, onPress }: Props) {
   return (
     <Pressable onPress={onPress} style={styles.card}>
       <View style={styles.header}>
@@ -20,7 +21,7 @@ export function BatchCard({ batch, isFifo, now, onPress }: Props) {
         </Text>
         <View style={styles.badges}>
           {isFifo ? <FifoBadge /> : null}
-          <ExpiryBadge expiryDate={batch.expiryDate} now={now} />
+          <ExpiryBadge expiryDate={batch.expiryDate} now={now} amberDays={amberDays} />
         </View>
       </View>
       <Text style={styles.meta}>Supplier: {batch.supplier}</Text>

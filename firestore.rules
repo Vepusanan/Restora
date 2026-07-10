@@ -42,13 +42,21 @@ service cloud.firestore {
     }
 
     match /restaurants/{restaurantId} {
-      allow get: if isAdmin() && sameRestaurant(restaurantId);
+      allow get: if isApproved() && sameRestaurant(restaurantId);
       allow list: if false;
       allow create: if isSignedIn()
         && request.resource.data.ownerId == request.auth.uid
         && request.resource.data.name is string
         && request.resource.data.code is string;
-      allow update: if isAdmin() && sameRestaurant(restaurantId);
+      // Admin may update expiryAlertThreshold (FR-025); core identity fields stay immutable.
+      allow update: if isAdmin()
+        && sameRestaurant(restaurantId)
+        && request.resource.data.name == resource.data.name
+        && request.resource.data.code == resource.data.code
+        && request.resource.data.ownerId == resource.data.ownerId
+        && request.resource.data.expiryAlertThreshold is int
+        && request.resource.data.expiryAlertThreshold >= 1
+        && request.resource.data.expiryAlertThreshold <= 30;
       allow delete: if false;
     }
 
@@ -133,6 +141,7 @@ service cloud.firestore {
 
       // Staff/admin can update same-restaurant batches.
       // Only admins may change the archived flag (FR-019).
+      // Evaluation/notification fields are Cloud Functions–owned (Admin SDK).
       allow update: if isApproved()
         && resource.data.restaurantId == userDoc().restaurantId
         && request.resource.data.restaurantId == resource.data.restaurantId
@@ -141,12 +150,15 @@ service cloud.firestore {
         && request.resource.data.unit == resource.data.unit
         && request.resource.data.dateReceived == resource.data.dateReceived
         && request.resource.data.createdBy == resource.data.createdBy
+        && request.resource.data.get('evaluatedTone', null) == resource.data.get('evaluatedTone', null)
+        && request.resource.data.get('lastNotifiedTone', null) == resource.data.get('lastNotifiedTone', null)
+        && request.resource.data.get('lastNotifiedAt', null) == resource.data.get('lastNotifiedAt', null)
+        && request.resource.data.get('lastEvaluatedAt', null) == resource.data.get('lastEvaluatedAt', null)
         && (
           isAdmin()
           || request.resource.data.archived == resource.data.archived
         );
 
-      // Soft-delete only — never hard delete
       allow delete: if false;
     }
 
@@ -160,9 +172,29 @@ service cloud.firestore {
           'batch_created',
           'batch_edited',
           'batch_consumed',
-          'batch_archived'
+          'batch_archived',
+          'threshold_updated'
         ];
       allow update, delete: if false;
+    }
+
+    // User inbox — created only by Cloud Functions (Admin SDK).
+    match /notifications/{docId} {
+      allow read: if isSignedIn() && resource.data.userId == request.auth.uid;
+      allow create: if false;
+      allow update: if isSignedIn()
+        && resource.data.userId == request.auth.uid
+        && request.resource.data.userId == resource.data.userId
+        && request.resource.data.batchId == resource.data.batchId
+        && request.resource.data.restaurantId == resource.data.restaurantId;
+      allow delete: if false;
+    }
+
+    // Restaurant-wide dispatch audit — Functions write only.
+    match /notificationHistory/{docId} {
+      allow read: if isAdmin()
+        && resource.data.restaurantId == userDoc().restaurantId;
+      allow create, update, delete: if false;
     }
 
     match /waste/{docId} {
@@ -171,14 +203,6 @@ service cloud.firestore {
         && request.resource.data.restaurantId == userDoc().restaurantId;
       allow update, delete: if isApproved()
         && resource.data.restaurantId == userDoc().restaurantId;
-    }
-
-    match /notifications/{docId} {
-      allow read: if isSignedIn() && resource.data.userId == request.auth.uid;
-      allow create: if isAdmin()
-        && request.resource.data.restaurantId == userDoc().restaurantId;
-      allow update: if isSignedIn() && resource.data.userId == request.auth.uid;
-      allow delete: if false;
     }
 
     match /{document=**} {

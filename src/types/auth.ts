@@ -21,7 +21,9 @@ export type UserProfile = {
   restaurantCode: string;
   avatarId: string | null;
   photoURL: string | null;
+  /** @deprecated Prefer fcmTokens for multi-device support */
   fcmToken: string | null;
+  fcmTokens: string[];
   createdAt: string;
   updatedAt: string;
 };
@@ -31,6 +33,8 @@ export type Restaurant = {
   name: string;
   code: string;
   ownerId: string;
+  /** Amber alert threshold in days (FR-025). Default 3. */
+  expiryAlertThreshold: number;
   createdAt: string;
   updatedAt: string;
 };

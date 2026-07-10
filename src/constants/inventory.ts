@@ -11,8 +11,11 @@ export const INVENTORY_UNITS: InventoryUnit[] = [
   'dozen',
 ];
 
-/** Amber window: 0–3 days remaining (FR-015). */
+/** Default amber window in days (FR-015 / FR-025). Overridden per restaurant. */
 export const EXPIRY_AMBER_DAYS = 3;
+export const EXPIRY_THRESHOLD_MIN = 1;
+export const EXPIRY_THRESHOLD_MAX = 30;
+export const NOTIFICATION_SUPPRESSION_HOURS = 24;
 
 export const DEFAULT_INVENTORY_FILTERS = {
   search: '',

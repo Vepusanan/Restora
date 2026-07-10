@@ -1,6 +1,7 @@
 import { StyleSheet, Text, View } from 'react-native';
 import { colors, spacing } from '@constants/theme';
 import { getExpiryLabel, getExpiryTone } from '@utils/expiry';
+import { EXPIRY_AMBER_DAYS } from '@constants/inventory';
 import type { ExpiryTone } from '@/types';
 
 const TONE_STYLES: Record<ExpiryTone, { bg: string; fg: string; label: string }> = {
@@ -12,10 +13,15 @@ const TONE_STYLES: Record<ExpiryTone, { bg: string; fg: string; label: string }>
 type Props = {
   expiryDate: string;
   now?: Date;
+  amberDays?: number;
 };
 
-export function ExpiryBadge({ expiryDate, now = new Date() }: Props) {
-  const tone = getExpiryTone(expiryDate, now);
+export function ExpiryBadge({
+  expiryDate,
+  now = new Date(),
+  amberDays = EXPIRY_AMBER_DAYS,
+}: Props) {
+  const tone = getExpiryTone(expiryDate, now, amberDays);
   const style = TONE_STYLES[tone];
 
   return (

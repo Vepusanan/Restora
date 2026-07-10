@@ -24,6 +24,12 @@ export type {
   IngredientGroup,
 } from './inventory';
 
+export type {
+  AppNotification,
+  NotificationHistoryEntry,
+  ExpiryEvaluationFields,
+} from './notifications';
+
 export type AiGenerateRequest = {
   prompt: string;
 };

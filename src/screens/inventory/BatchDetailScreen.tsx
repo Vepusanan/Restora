@@ -7,6 +7,7 @@ import { ConfirmDialog } from '@components/ui/ConfirmDialog';
 import { InlineError } from '@components/ui/InlineError';
 import { LoadingState } from '@components/ui/LoadingState';
 import { useAuth } from '@hooks/useAuth';
+import { useRestaurantSettings } from '@hooks/useRestaurantSettings';
 import { inventoryService } from '@services/inventory.service';
 import { isActiveBatch } from '@utils/expiry';
 import { colors, spacing } from '@constants/theme';
@@ -19,7 +20,8 @@ type Props = {
 export function BatchDetailScreen({ basePath }: Props) {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
-  const { user, isAdmin } = useAuth();
+  const { user, profile, isAdmin } = useAuth();
+  const { amberDays } = useRestaurantSettings(profile?.restaurantId);
   const [batch, setBatch] = useState<InventoryBatch | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -87,7 +89,7 @@ export function BatchDetailScreen({ basePath }: Props) {
 
         <View style={styles.card}>
           <View style={styles.badges}>
-            <ExpiryBadge expiryDate={batch.expiryDate} />
+            <ExpiryBadge expiryDate={batch.expiryDate} amberDays={amberDays} />
           </View>
           <Text style={styles.qty}>
             {batch.quantity} {batch.unit}

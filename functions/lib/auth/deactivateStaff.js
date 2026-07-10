@@ -46,6 +46,7 @@ exports.deactivateStaff = (0, https_1.onCall)({
     await staffRef.update({
         status: 'deactivated',
         fcmToken: null,
+        fcmTokens: [],
         updatedAt: firestore_1.FieldValue.serverTimestamp(),
     });
     await (0, auth_1.getAuth)().revokeRefreshTokens(staffUid);

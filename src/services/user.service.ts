@@ -1,7 +1,11 @@
 import {
+  arrayRemove,
+  arrayUnion,
   doc,
   getDoc,
   onSnapshot,
+  serverTimestamp,
+  updateDoc,
   type Unsubscribe,
 } from 'firebase/firestore';
 import { getDb } from './firebase/firestore';
@@ -32,5 +36,31 @@ export const userService = {
         callback(null);
       },
     );
+  },
+
+  async registerFcmToken(uid: string, token: string): Promise<void> {
+    if (!token.trim()) return;
+    try {
+      await updateDoc(doc(getDb(), COLLECTIONS.users, uid), {
+        fcmToken: token,
+        fcmTokens: arrayUnion(token),
+        updatedAt: serverTimestamp(),
+      });
+    } catch (error) {
+      throw toServiceError(error, 'Unable to register push token');
+    }
+  },
+
+  async removeFcmToken(uid: string, token: string): Promise<void> {
+    if (!token.trim()) return;
+    try {
+      await updateDoc(doc(getDb(), COLLECTIONS.users, uid), {
+        fcmTokens: arrayRemove(token),
+        fcmToken: null,
+        updatedAt: serverTimestamp(),
+      });
+    } catch (error) {
+      throw toServiceError(error, 'Unable to remove push token');
+    }
   },
 };

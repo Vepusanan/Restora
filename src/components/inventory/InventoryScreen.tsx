@@ -36,6 +36,7 @@ export function InventoryScreen({ basePath }: Props) {
     setFilters,
     now,
     batches,
+    amberDays,
   } = useInventory(profile?.restaurantId);
 
   const [filtersOpen, setFiltersOpen] = useState(false);
@@ -72,6 +73,25 @@ export function InventoryScreen({ basePath }: Props) {
           </View>
         </View>
 
+        {isAdmin ? (
+          <View style={styles.actions}>
+            <View style={styles.actionGrow}>
+              <Button
+                title="Expiry settings"
+                variant="ghost"
+                onPress={() => router.push('/(admin)/inventory-settings' as never)}
+              />
+            </View>
+            <View style={styles.actionGrow}>
+              <Button
+                title="Alerts"
+                variant="ghost"
+                onPress={() => router.push('/(admin)/notification-history' as never)}
+              />
+            </View>
+          </View>
+        ) : null}
+
         {filtersOpen ? (
           <InventoryFiltersBar
             filters={filters}
@@ -92,6 +112,8 @@ export function InventoryScreen({ basePath }: Props) {
       suppliers,
       setFilters,
       error,
+      isAdmin,
+      router,
     ],
   );
 
@@ -127,6 +149,7 @@ export function InventoryScreen({ basePath }: Props) {
               batch={batch}
               isFifo={item.fifoBatchId === batch.id}
               now={now}
+              amberDays={amberDays}
               onPress={() => openBatch(batch.id)}
             />
           ))}

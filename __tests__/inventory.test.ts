@@ -25,6 +25,10 @@ function makeBatch(partial: Partial<InventoryBatch> & Pick<InventoryBatch, 'id' 
     createdBy: 'u1',
     lastModifiedAt: '2026-01-01T00:00:00.000Z',
     lastModifiedBy: 'u1',
+    evaluatedTone: null,
+    lastNotifiedTone: null,
+    lastNotifiedAt: null,
+    lastEvaluatedAt: null,
     ...partial,
   };
 }
@@ -121,6 +125,11 @@ describe('FR-015 expiry tones', () => {
 
   it('marks red when expired', () => {
     expect(getExpiryTone('2026-07-09', now)).toBe('red');
+  });
+
+  it('FR-025 uses configurable amber threshold', () => {
+    expect(getExpiryTone('2026-07-15', now, 3)).toBe('green');
+    expect(getExpiryTone('2026-07-15', now, 7)).toBe('amber');
   });
 });
 

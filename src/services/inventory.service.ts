@@ -141,6 +141,10 @@ export const inventoryService = {
         createdBy: input.userId,
         lastModifiedAt: serverTimestamp(),
         lastModifiedBy: input.userId,
+        evaluatedTone: null,
+        lastNotifiedTone: null,
+        lastNotifiedAt: null,
+        lastEvaluatedAt: null,
       });
 
       await writeAuditLog({

@@ -57,6 +57,7 @@ export const deactivateStaff = onCall(
     await staffRef.update({
       status: 'deactivated',
       fcmToken: null,
+      fcmTokens: [],
       updatedAt: FieldValue.serverTimestamp(),
     });
 

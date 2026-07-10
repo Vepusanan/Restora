@@ -4,6 +4,7 @@ export { restaurantService } from './restaurant.service';
 export { staffService } from './staff.service';
 export { storageService } from './storage.service';
 export { inventoryService } from './inventory.service';
+export { notificationService } from './notifications.service';
 export { generateAIResponse } from './gemini/generateAIResponse';
 export { getFirebaseApp } from './firebase/config';
 export { getFirebaseAuth } from './firebase/auth';

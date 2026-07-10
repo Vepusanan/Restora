@@ -31,6 +31,11 @@ export type InventoryBatch = {
   createdBy: string;
   lastModifiedAt: string;
   lastModifiedBy: string;
+  /** Server-side evaluation cache for Cloud Functions (not used for UI badges). */
+  evaluatedTone: ExpiryTone | null;
+  lastNotifiedTone: ExpiryTone | null;
+  lastNotifiedAt: string | null;
+  lastEvaluatedAt: string | null;
 };
 
 export type CreateBatchInput = {
@@ -53,7 +58,11 @@ export type AuditAction =
   | 'batch_created'
   | 'batch_edited'
   | 'batch_consumed'
-  | 'batch_archived';
+  | 'batch_archived'
+  | 'threshold_updated'
+  | 'expiry_detected'
+  | 'notification_sent'
+  | 'notification_failed';
 
 export type AuditLogEntry = {
   id: string;

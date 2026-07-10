@@ -1,14 +1,18 @@
 import type { DocumentData, Timestamp } from 'firebase/firestore';
 import type {
+  AppNotification,
+  ExpiryTone,
   InventoryBatch,
   InventoryUnit,
+  NotificationHistoryEntry,
   Restaurant,
   StaffMember,
   UserProfile,
   UserRole,
   UserStatus,
 } from '@/types';
-import { ingredientKey, normalizeIngredientName } from '@utils/expiry';
+import { EXPIRY_AMBER_DAYS } from '@constants/inventory';
+import { clampExpiryThreshold, ingredientKey, normalizeIngredientName } from '@utils/expiry';
 
 export function toIso(value: unknown): string {
   if (!value) return new Date().toISOString();
@@ -35,6 +39,16 @@ function toDateOnly(value: unknown): string {
   return '';
 }
 
+function mapTokens(data: DocumentData): string[] {
+  const tokens = Array.isArray(data.fcmTokens)
+    ? data.fcmTokens.map(String).filter(Boolean)
+    : [];
+  if (data.fcmToken && !tokens.includes(String(data.fcmToken))) {
+    tokens.push(String(data.fcmToken));
+  }
+  return tokens;
+}
+
 export function mapUserProfile(uid: string, data: DocumentData): UserProfile {
   return {
     uid,
@@ -48,6 +62,7 @@ export function mapUserProfile(uid: string, data: DocumentData): UserProfile {
     avatarId: data.avatarId ? String(data.avatarId) : null,
     photoURL: data.photoURL ? String(data.photoURL) : null,
     fcmToken: data.fcmToken ? String(data.fcmToken) : null,
+    fcmTokens: mapTokens(data),
     createdAt: toIso(data.createdAt),
     updatedAt: toIso(data.updatedAt),
   };
@@ -59,6 +74,9 @@ export function mapRestaurant(id: string, data: DocumentData): Restaurant {
     name: String(data.name ?? ''),
     code: String(data.code ?? ''),
     ownerId: String(data.ownerId ?? ''),
+    expiryAlertThreshold: clampExpiryThreshold(
+      Number(data.expiryAlertThreshold ?? EXPIRY_AMBER_DAYS),
+    ),
     createdAt: toIso(data.createdAt),
     updatedAt: toIso(data.updatedAt),
   };
@@ -98,5 +116,52 @@ export function mapInventoryBatch(id: string, data: DocumentData): InventoryBatc
     createdBy: String(data.createdBy ?? ''),
     lastModifiedAt: toIso(data.lastModifiedAt ?? data.createdAt),
     lastModifiedBy: String(data.lastModifiedBy ?? data.createdBy ?? ''),
+    evaluatedTone: (data.evaluatedTone as ExpiryTone) ?? null,
+    lastNotifiedTone: (data.lastNotifiedTone as ExpiryTone) ?? null,
+    lastNotifiedAt: data.lastNotifiedAt ? toIso(data.lastNotifiedAt) : null,
+    lastEvaluatedAt: data.lastEvaluatedAt ? toIso(data.lastEvaluatedAt) : null,
+  };
+}
+
+export function mapAppNotification(id: string, data: DocumentData): AppNotification {
+  return {
+    id,
+    restaurantId: String(data.restaurantId ?? ''),
+    userId: String(data.userId ?? ''),
+    batchId: String(data.batchId ?? ''),
+    ingredientName: String(data.ingredientName ?? ''),
+    quantity: Number(data.quantity ?? 0),
+    unit: String(data.unit ?? ''),
+    dateReceived: toDateOnly(data.dateReceived),
+    expiryDate: toDateOnly(data.expiryDate),
+    daysRemaining: Number(data.daysRemaining ?? 0),
+    status: data.status === 'red' ? 'red' : 'amber',
+    title: String(data.title ?? ''),
+    body: String(data.body ?? ''),
+    read: Boolean(data.read),
+    deepLink: String(data.deepLink ?? 'restora://inventory'),
+    createdAt: toIso(data.createdAt),
+  };
+}
+
+export function mapNotificationHistory(
+  id: string,
+  data: DocumentData,
+): NotificationHistoryEntry {
+  return {
+    id,
+    restaurantId: String(data.restaurantId ?? ''),
+    batchId: String(data.batchId ?? ''),
+    status: data.status === 'red' ? 'red' : 'amber',
+    ingredientName: String(data.ingredientName ?? ''),
+    quantity: Number(data.quantity ?? 0),
+    unit: String(data.unit ?? ''),
+    dateReceived: toDateOnly(data.dateReceived),
+    expiryDate: toDateOnly(data.expiryDate),
+    daysRemaining: Number(data.daysRemaining ?? 0),
+    recipientCount: Number(data.recipientCount ?? 0),
+    successCount: Number(data.successCount ?? 0),
+    failureCount: Number(data.failureCount ?? 0),
+    triggeredAt: toIso(data.triggeredAt),
   };
 }

@@ -22,6 +22,7 @@ import { getDb } from './firebase/firestore';
 import { storageService } from './storage.service';
 import { restaurantService } from './restaurant.service';
 import { COLLECTIONS } from '@constants/auth';
+import { EXPIRY_AMBER_DAYS } from '@constants/inventory';
 import { generateRestaurantCode } from '@utils/restaurantCode';
 import { createServiceError, toServiceError } from '@utils/errors';
 import type { AuthUser } from '@/types';
@@ -121,6 +122,7 @@ export const authService = {
         name: input.restaurantName.trim(),
         code: restaurantCode,
         ownerId: createdUser.uid,
+        expiryAlertThreshold: EXPIRY_AMBER_DAYS,
         createdAt: serverTimestamp(),
         updatedAt: serverTimestamp(),
       });
@@ -145,6 +147,7 @@ export const authService = {
         avatarId: input.avatarId ?? null,
         photoURL,
         fcmToken: null,
+        fcmTokens: [],
         createdAt: serverTimestamp(),
         updatedAt: serverTimestamp(),
       });
@@ -205,6 +208,7 @@ export const authService = {
         avatarId: input.avatarId ?? null,
         photoURL,
         fcmToken: null,
+        fcmTokens: [],
         createdAt: serverTimestamp(),
         updatedAt: serverTimestamp(),
       });

@@ -48,6 +48,7 @@ export function buildInventoryGroups(
   batches: InventoryBatch[],
   filters: InventoryFilters,
   now = new Date(),
+  amberDays?: number,
 ): IngredientGroup[] {
   const search = filters.search.trim().toLowerCase();
 
@@ -63,7 +64,7 @@ export function buildInventoryGroups(
     }
 
     if (filters.expiryTones.length > 0) {
-      const tone = getExpiryTone(batch.expiryDate, now);
+      const tone = getExpiryTone(batch.expiryDate, now, amberDays);
       if (!filters.expiryTones.includes(tone)) return false;
     }
 
