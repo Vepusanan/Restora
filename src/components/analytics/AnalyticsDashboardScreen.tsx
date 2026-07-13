@@ -162,6 +162,7 @@ export function AnalyticsDashboardScreen() {
       <WasteTrendChart
         title={`Waste cost trend (${period})`}
         points={wasteTrends}
+        currency={currency}
       />
 
       <ConsumptionAnalyticsPanel
@@ -193,12 +194,13 @@ export function AnalyticsDashboardScreen() {
         </View>
       </View>
 
-      <TopWastedTable rows={topWasted} />
+      <TopWastedTable rows={topWasted} currency={currency} />
 
       <CostBreakdownChart
         title="Ingredient cost breakdown"
         totalLabel="Total ingredient cost in range"
         totalValue={totalIngredientCost}
+        currency={currency}
         items={ingredientBreakdown.map((row) => ({
           key: row.ingredientKey,
           label: `${row.ingredientName} (${row.percentage.toFixed(0)}%)`,

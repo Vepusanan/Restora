@@ -13,6 +13,7 @@ type Props = {
   totalLabel: string;
   totalValue: number;
   items: BarItem[];
+  currency?: string;
   emptyMessage?: string;
 };
 
@@ -21,6 +22,7 @@ export function CostBreakdownChart({
   totalLabel,
   totalValue,
   items,
+  currency = 'USD',
   emptyMessage = 'No data for this range',
 }: Props) {
   const max = Math.max(...items.map((item) => item.value), 0);
@@ -29,7 +31,7 @@ export function CostBreakdownChart({
     <View style={styles.card}>
       <Text style={styles.title}>{title}</Text>
       <Text style={styles.totalLabel}>{totalLabel}</Text>
-      <Text style={styles.total}>{formatMoney(totalValue)}</Text>
+      <Text style={styles.total}>{formatMoney(totalValue, currency)}</Text>
 
       {items.length === 0 ? (
         <Text style={styles.empty}>{emptyMessage}</Text>
@@ -43,7 +45,7 @@ export function CostBreakdownChart({
                   <Text style={styles.rowLabel} numberOfLines={1}>
                     {item.label}
                   </Text>
-                  <Text style={styles.rowValue}>{formatMoney(item.value)}</Text>
+                  <Text style={styles.rowValue}>{formatMoney(item.value, currency)}</Text>
                 </View>
                 <View style={styles.track}>
                   <View style={[styles.fill, { width: `${widthPct}%` }]} />

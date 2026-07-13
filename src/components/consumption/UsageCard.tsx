@@ -7,9 +7,10 @@ type Props = {
   log: InventoryUsageLog;
   onPress: () => void;
   showFinancials?: boolean;
+  currency?: string;
 };
 
-export function UsageCard({ log, onPress, showFinancials = false }: Props) {
+export function UsageCard({ log, onPress, showFinancials = false, currency = 'USD' }: Props) {
   return (
     <Pressable
       onPress={onPress}
@@ -30,7 +31,7 @@ export function UsageCard({ log, onPress, showFinancials = false }: Props) {
         {log.quantityUsed} {log.unit} · {log.category}
       </Text>
       <Text style={styles.meta}>
-        {showFinancials ? `Cost ${formatConsumptionCost(log.consumptionCost)} · ` : ''}
+        {showFinancials ? `Cost ${formatConsumptionCost(log.consumptionCost, currency)} · ` : ''}
         {log.usedByName || 'Unknown'}
       </Text>
       <Text style={styles.meta}>{log.usedAt.slice(0, 19).replace('T', ' ')}</Text>

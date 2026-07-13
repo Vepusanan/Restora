@@ -6,12 +6,14 @@ import type { WasteTrendPoint } from '@/types';
 type Props = {
   title: string;
   points: WasteTrendPoint[];
+  currency?: string;
   emptyMessage?: string;
 };
 
 export function WasteTrendChart({
   title,
   points,
+  currency = 'USD',
   emptyMessage = 'No waste cost in this range',
 }: Props) {
   const max = Math.max(...points.map((point) => point.totalLoss), 0);
@@ -27,7 +29,7 @@ export function WasteTrendChart({
             const heightPct = max > 0 ? Math.max(8, (point.totalLoss / max) * 100) : 0;
             return (
               <View key={point.key} style={styles.col}>
-                <Text style={styles.amount}>{formatMoney(point.totalLoss)}</Text>
+                <Text style={styles.amount}>{formatMoney(point.totalLoss, currency)}</Text>
                 <View style={styles.track}>
                   <View style={[styles.fill, { height: `${heightPct}%` }]} />
                 </View>

@@ -86,6 +86,7 @@ export function CostDashboardScreen() {
           title="Top ingredient costs (this month)"
           totalLabel="Total"
           totalValue={ingredientCost.totalCost}
+          currency={currency}
           items={ingredientCost.rows.map((row) => ({
             key: row.ingredientKey,
             label: row.ingredientName,
@@ -97,6 +98,7 @@ export function CostDashboardScreen() {
           title="Waste loss by reason (this month)"
           totalLabel="Total loss"
           totalValue={wasteLoss.totalLoss}
+          currency={currency}
           items={wasteLoss.rows.map((row) => ({
             key: row.key,
             label: row.label,

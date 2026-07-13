@@ -6,6 +6,7 @@ import { DateRangeFields } from '@components/financial/DateRangeFields';
 import { FinancialAccessDenied } from '@components/financial/FinancialAccessDenied';
 import { useFinancialDashboard } from '@hooks/useFinancialDashboard';
 import { useAuth } from '@hooks/useAuth';
+import { useRestaurantSettings } from '@hooks/useRestaurantSettings';
 import { WASTE_REASON_OPTIONS } from '@constants/waste';
 import { colors, spacing } from '@constants/theme';
 import { formatMoney } from '@utils/financial';
@@ -13,6 +14,7 @@ import type { WasteReason } from '@/types';
 
 export function WasteLossScreen() {
   const { profile } = useAuth();
+  const { currency } = useRestaurantSettings(profile?.restaurantId);
   const {
     allowed,
     loading,
@@ -104,6 +106,7 @@ export function WasteLossScreen() {
           title="Loss breakdown"
           totalLabel="Total waste loss"
           totalValue={wasteLoss.totalLoss}
+          currency={currency}
           items={wasteLoss.rows.map((row) => ({
             key: row.key,
             label: row.label,
@@ -118,7 +121,7 @@ export function WasteLossScreen() {
             <Text style={styles.meta}>
               {row.eventCount} event{row.eventCount === 1 ? '' : 's'}
             </Text>
-            <Text style={styles.detailCost}>{formatMoney(row.totalLoss)}</Text>
+            <Text style={styles.detailCost}>{formatMoney(row.totalLoss, currency)}</Text>
           </View>
         ))}
       </ScrollView>

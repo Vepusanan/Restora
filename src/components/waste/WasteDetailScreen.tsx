@@ -6,6 +6,7 @@ import { ConfirmDialog } from '@components/ui/ConfirmDialog';
 import { InlineError } from '@components/ui/InlineError';
 import { LoadingState } from '@components/ui/LoadingState';
 import { useAuth } from '@hooks/useAuth';
+import { useRestaurantSettings } from '@hooks/useRestaurantSettings';
 import { wasteService } from '@services/waste.service';
 import { colors, spacing } from '@constants/theme';
 import { formatCostLoss } from '@utils/waste';
@@ -19,6 +20,7 @@ export function WasteDetailScreen({ basePath }: Props) {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
   const { user, profile, isAdmin } = useAuth();
+  const { currency } = useRestaurantSettings(profile?.restaurantId);
   const [log, setLog] = useState<WasteLog | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -82,8 +84,8 @@ export function WasteDetailScreen({ basePath }: Props) {
           <Text style={styles.meta}>Reason: {log.wasteReason}</Text>
           {isAdmin ? (
             <>
-              <Text style={styles.meta}>Unit cost: {formatCostLoss(log.unitCost)}</Text>
-              <Text style={styles.loss}>Cost loss: {formatCostLoss(log.costLoss)}</Text>
+              <Text style={styles.meta}>Unit cost: {formatCostLoss(log.unitCost, currency)}</Text>
+              <Text style={styles.loss}>Cost loss: {formatCostLoss(log.costLoss, currency)}</Text>
             </>
           ) : null}
           <Text style={styles.meta}>Logged by: {log.loggedByName || log.loggedBy}</Text>

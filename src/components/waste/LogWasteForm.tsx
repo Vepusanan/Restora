@@ -7,6 +7,7 @@ import { InlineError } from '@components/ui/InlineError';
 import { SelectField } from '@components/ui/SelectField';
 import { useAuth } from '@hooks/useAuth';
 import { useInventory } from '@hooks/useInventory';
+import { useRestaurantSettings } from '@hooks/useRestaurantSettings';
 import { wasteService } from '@services/waste.service';
 import { WASTE_REASON_OPTIONS } from '@constants/waste';
 import { colors, spacing } from '@constants/theme';
@@ -23,6 +24,7 @@ export function LogWasteForm({ basePath }: Props) {
   const router = useRouter();
   const params = useLocalSearchParams<{ batchId?: string }>();
   const { user, profile, isAdmin } = useAuth();
+  const { currency } = useRestaurantSettings(profile?.restaurantId);
   const { batches, loading: inventoryLoading } = useInventory(profile?.restaurantId);
 
   const activeBatches = useMemo(
@@ -85,7 +87,7 @@ export function LogWasteForm({ basePath }: Props) {
       Alert.alert(
         'Waste logged',
         isAdmin
-          ? `Recorded ${parsed.data.quantityWasted} ${selected?.unit ?? ''} · Loss ${formatCostLoss(result.costLoss)}`
+          ? `Recorded ${parsed.data.quantityWasted} ${selected?.unit ?? ''} · Loss ${formatCostLoss(result.costLoss, currency)}`
           : `Recorded ${parsed.data.quantityWasted} ${selected?.unit ?? ''} as ${parsed.data.wasteReason}.`,
       );
       router.replace(`${basePath}/waste-entry/${result.wasteLogId}` as never);
@@ -137,7 +139,7 @@ export function LogWasteForm({ basePath }: Props) {
               Remaining: {selected.quantity} {selected.unit}
             </Text>
             {isAdmin ? (
-              <Text style={styles.meta}>Unit cost: {formatCostLoss(selected.unitCost)}</Text>
+              <Text style={styles.meta}>Unit cost: {formatCostLoss(selected.unitCost, currency)}</Text>
             ) : null}
             <Text style={styles.meta}>Received: {selected.dateReceived}</Text>
           </View>
@@ -163,7 +165,7 @@ export function LogWasteForm({ basePath }: Props) {
         {isAdmin && previewLoss > 0 ? (
           <View style={styles.preview}>
             <Text style={styles.previewTitle}>Estimated cost loss</Text>
-            <Text style={styles.loss}>{formatCostLoss(previewLoss)}</Text>
+            <Text style={styles.loss}>{formatCostLoss(previewLoss, currency)}</Text>
             <Text style={styles.meta}>Final value is calculated on submit.</Text>
           </View>
         ) : null}

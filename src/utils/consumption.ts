@@ -14,6 +14,7 @@ import type {
   AggregationPeriod,
 } from '@/types';
 import { ingredientKey, parseDateOnly, toDateOnlyString } from '@utils/expiry';
+import { formatMoney } from '@utils/financial';
 import { calculateCostLoss } from '@utils/waste';
 
 /** Same formula as waste costLoss — qty × unitCost (FR-062 cost contribution). */
@@ -344,6 +345,9 @@ export function buildInventoryTurnover(
   return rows.sort((a, b) => b.turnoverRatio - a.turnoverRatio);
 }
 
-export function formatConsumptionCost(value: number): string {
-  return `$${value.toFixed(2)}`;
+export function formatConsumptionCost(
+  value: number,
+  currency: import('@/types').RestaurantCurrency | string = 'USD',
+): string {
+  return formatMoney(value, currency);
 }

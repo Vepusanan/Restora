@@ -10,6 +10,7 @@ import { useAuth } from '@hooks/useAuth';
 import { useRestaurantSettings } from '@hooks/useRestaurantSettings';
 import { inventoryService } from '@services/inventory.service';
 import { isActiveBatch } from '@utils/expiry';
+import { formatMoney } from '@utils/financial';
 import { colors, spacing } from '@constants/theme';
 import type { InventoryBatch, ServiceError } from '@/types';
 
@@ -21,7 +22,7 @@ export function BatchDetailScreen({ basePath }: Props) {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
   const { user, profile, isAdmin } = useAuth();
-  const { amberDays } = useRestaurantSettings(profile?.restaurantId);
+  const { amberDays, currency } = useRestaurantSettings(profile?.restaurantId);
   const [batch, setBatch] = useState<InventoryBatch | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -95,7 +96,7 @@ export function BatchDetailScreen({ basePath }: Props) {
             {batch.quantity} {batch.unit}
           </Text>
           <Text style={styles.meta}>Supplier: {batch.supplier}</Text>
-          <Text style={styles.meta}>Unit cost: ${batch.unitCost.toFixed(2)}</Text>
+          <Text style={styles.meta}>Unit cost: {formatMoney(batch.unitCost, currency)}</Text>
           <Text style={styles.meta}>Received: {batch.dateReceived}</Text>
           <Text style={styles.meta}>Expires: {batch.expiryDate}</Text>
           <Text style={styles.meta}>

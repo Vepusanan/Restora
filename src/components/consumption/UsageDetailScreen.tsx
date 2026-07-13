@@ -6,6 +6,7 @@ import { ConfirmDialog } from '@components/ui/ConfirmDialog';
 import { InlineError } from '@components/ui/InlineError';
 import { LoadingState } from '@components/ui/LoadingState';
 import { useAuth } from '@hooks/useAuth';
+import { useRestaurantSettings } from '@hooks/useRestaurantSettings';
 import { consumptionService } from '@services/consumption.service';
 import { colors, spacing } from '@constants/theme';
 import { formatConsumptionCost } from '@utils/consumption';
@@ -19,6 +20,7 @@ export function UsageDetailScreen({ basePath }: Props) {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
   const { user, profile, isAdmin } = useAuth();
+  const { currency } = useRestaurantSettings(profile?.restaurantId);
   const [log, setLog] = useState<InventoryUsageLog | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -83,9 +85,9 @@ export function UsageDetailScreen({ basePath }: Props) {
           {log.notes ? <Text style={styles.meta}>Notes: {log.notes}</Text> : null}
           {isAdmin ? (
             <>
-              <Text style={styles.meta}>Unit cost: {formatConsumptionCost(log.unitCost)}</Text>
+              <Text style={styles.meta}>Unit cost: {formatConsumptionCost(log.unitCost, currency)}</Text>
               <Text style={styles.cost}>
-                Consumption cost: {formatConsumptionCost(log.consumptionCost)}
+                Consumption cost: {formatConsumptionCost(log.consumptionCost, currency)}
               </Text>
             </>
           ) : null}

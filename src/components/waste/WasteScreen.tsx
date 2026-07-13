@@ -14,6 +14,7 @@ import { EmptyState } from '@components/ui/EmptyState';
 import { InlineError } from '@components/ui/InlineError';
 import { useAuth } from '@hooks/useAuth';
 import { useWasteLogs } from '@hooks/useWasteLogs';
+import { useRestaurantSettings } from '@hooks/useRestaurantSettings';
 import { colors, spacing, TAB_BAR_CLEARANCE } from '@constants/theme';
 import { formatCostLoss } from '@utils/waste';
 
@@ -24,6 +25,7 @@ type Props = {
 export function WasteScreen({ basePath }: Props) {
   const router = useRouter();
   const { profile, isAdmin } = useAuth();
+  const { currency } = useRestaurantSettings(profile?.restaurantId);
   const { filtered, summary, loggers, loading, error, filters, setFilters } = useWasteLogs(
     profile?.restaurantId,
   );
@@ -54,7 +56,7 @@ export function WasteScreen({ basePath }: Props) {
             <View style={styles.summaryRow}>
               <View style={styles.summaryCard}>
                 <Text style={styles.summaryLabel}>Active loss</Text>
-                <Text style={styles.summaryValue}>{formatCostLoss(summary.totalCostLoss)}</Text>
+                <Text style={styles.summaryValue}>{formatCostLoss(summary.totalCostLoss, currency)}</Text>
               </View>
               <View style={styles.summaryCard}>
                 <Text style={styles.summaryLabel}>Qty wasted</Text>
@@ -108,6 +110,7 @@ export function WasteScreen({ basePath }: Props) {
         <WasteCard
           log={item}
           showFinancials={isAdmin}
+          currency={currency}
           onPress={() => router.push(`${basePath}/waste-entry/${item.id}` as never)}
         />
       )}

@@ -6,11 +6,13 @@ import { DateRangeFields } from '@components/financial/DateRangeFields';
 import { FinancialAccessDenied } from '@components/financial/FinancialAccessDenied';
 import { useFinancialDashboard } from '@hooks/useFinancialDashboard';
 import { useAuth } from '@hooks/useAuth';
+import { useRestaurantSettings } from '@hooks/useRestaurantSettings';
 import { colors, spacing } from '@constants/theme';
 import { formatMoney } from '@utils/financial';
 
 export function IngredientCostScreen() {
   const { profile } = useAuth();
+  const { currency } = useRestaurantSettings(profile?.restaurantId);
   const {
     allowed,
     loading,
@@ -103,6 +105,7 @@ export function IngredientCostScreen() {
           title="Cost by ingredient"
           totalLabel="Total ingredient cost"
           totalValue={ingredientCost.totalCost}
+          currency={currency}
           items={ingredientCost.rows.map((row) => ({
             key: row.ingredientKey,
             label: `${row.ingredientName} (${row.totalQuantity} ${row.unit})`,
@@ -118,7 +121,7 @@ export function IngredientCostScreen() {
               {row.batchCount} batch{row.batchCount === 1 ? '' : 'es'} · {row.totalQuantity}{' '}
               {row.unit}
             </Text>
-            <Text style={styles.detailCost}>{formatMoney(row.totalCost)}</Text>
+            <Text style={styles.detailCost}>{formatMoney(row.totalCost, currency)}</Text>
           </View>
         ))}
       </ScrollView>

@@ -2,6 +2,7 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { ExpiryBadge } from '@components/inventory/ExpiryBadge';
 import { FifoBadge } from '@components/inventory/FifoBadge';
 import { colors, spacing } from '@constants/theme';
+import { formatMoney } from '@utils/financial';
 import type { InventoryBatch } from '@/types';
 
 type Props = {
@@ -9,10 +10,11 @@ type Props = {
   isFifo: boolean;
   now: Date;
   amberDays?: number;
+  currency?: string;
   onPress: () => void;
 };
 
-export function BatchCard({ batch, isFifo, now, amberDays, onPress }: Props) {
+export function BatchCard({ batch, isFifo, now, amberDays, currency = 'USD', onPress }: Props) {
   return (
     <Pressable onPress={onPress} style={styles.card}>
       <View style={styles.header}>
@@ -28,7 +30,7 @@ export function BatchCard({ batch, isFifo, now, amberDays, onPress }: Props) {
       <Text style={styles.meta}>
         Received {batch.dateReceived} · Expires {batch.expiryDate}
       </Text>
-      <Text style={styles.meta}>Unit cost: ${batch.unitCost.toFixed(2)}</Text>
+      <Text style={styles.meta}>Unit cost: {formatMoney(batch.unitCost, currency)}</Text>
       {batch.consumed ? <Text style={styles.flag}>Consumed</Text> : null}
       {batch.archived ? <Text style={styles.flag}>Archived</Text> : null}
     </Pressable>

@@ -8,9 +8,10 @@ type Props = {
   onPress: () => void;
   /** FR-035 — hide cost amounts from staff */
   showFinancials?: boolean;
+  currency?: string;
 };
 
-export function WasteCard({ log, onPress, showFinancials = false }: Props) {
+export function WasteCard({ log, onPress, showFinancials = false, currency = 'USD' }: Props) {
   return (
     <Pressable
       onPress={onPress}
@@ -29,7 +30,7 @@ export function WasteCard({ log, onPress, showFinancials = false }: Props) {
         {log.quantityWasted} {log.unit} · {log.wasteReason}
       </Text>
       <Text style={styles.meta}>
-        {showFinancials ? `Loss ${formatCostLoss(log.costLoss)} · ` : ''}
+        {showFinancials ? `Loss ${formatCostLoss(log.costLoss, currency)} · ` : ''}
         {log.loggedByName || 'Unknown'}
       </Text>
       <Text style={styles.meta}>{log.timestamp.slice(0, 19).replace('T', ' ')}</Text>

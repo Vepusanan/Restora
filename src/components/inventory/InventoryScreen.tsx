@@ -16,6 +16,7 @@ import { EmptyState } from '@components/ui/EmptyState';
 import { InlineError } from '@components/ui/InlineError';
 import { useAuth } from '@hooks/useAuth';
 import { useInventory } from '@hooks/useInventory';
+import { useRestaurantSettings } from '@hooks/useRestaurantSettings';
 import { colors, spacing, TAB_BAR_CLEARANCE } from '@constants/theme';
 import type { IngredientGroup } from '@/types';
 
@@ -27,6 +28,7 @@ type Props = {
 export function InventoryScreen({ basePath }: Props) {
   const router = useRouter();
   const { profile, isAdmin } = useAuth();
+  const { currency } = useRestaurantSettings(profile?.restaurantId);
   const {
     groups,
     suppliers,
@@ -154,6 +156,7 @@ export function InventoryScreen({ basePath }: Props) {
               isFifo={item.fifoBatchId === batch.id}
               now={now}
               amberDays={amberDays}
+              currency={currency}
               onPress={() => openBatch(batch.id)}
             />
           ))}

@@ -14,6 +14,7 @@ import { EmptyState } from '@components/ui/EmptyState';
 import { InlineError } from '@components/ui/InlineError';
 import { useAuth } from '@hooks/useAuth';
 import { useConsumptionLogs } from '@hooks/useConsumptionLogs';
+import { useRestaurantSettings } from '@hooks/useRestaurantSettings';
 import { colors, spacing, TAB_BAR_CLEARANCE } from '@constants/theme';
 import { formatConsumptionCost } from '@utils/consumption';
 
@@ -24,6 +25,7 @@ type Props = {
 export function UsageScreen({ basePath }: Props) {
   const router = useRouter();
   const { profile, isAdmin } = useAuth();
+  const { currency } = useRestaurantSettings(profile?.restaurantId);
   const { filtered, summary, users, loading, error, filters, setFilters } = useConsumptionLogs(
     profile?.restaurantId,
   );
@@ -55,7 +57,7 @@ export function UsageScreen({ basePath }: Props) {
               <View style={styles.summaryCard}>
                 <Text style={styles.summaryLabel}>Consumption cost</Text>
                 <Text style={styles.summaryValue}>
-                  {formatConsumptionCost(summary.totalConsumptionCost)}
+                  {formatConsumptionCost(summary.totalConsumptionCost, currency)}
                 </Text>
               </View>
               <View style={styles.summaryCard}>
@@ -107,6 +109,7 @@ export function UsageScreen({ basePath }: Props) {
         <UsageCard
           log={item}
           showFinancials={isAdmin}
+          currency={currency}
           onPress={() => router.push(`${basePath}/usage-entry/${item.id}` as never)}
         />
       )}

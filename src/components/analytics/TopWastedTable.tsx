@@ -5,9 +5,10 @@ import type { TopWastedIngredient } from '@/types';
 
 type Props = {
   rows: TopWastedIngredient[];
+  currency?: string;
 };
 
-export function TopWastedTable({ rows }: Props) {
+export function TopWastedTable({ rows, currency = 'USD' }: Props) {
   return (
     <View style={styles.card}>
       <Text style={styles.title}>Top wasted ingredients</Text>
@@ -25,7 +26,7 @@ export function TopWastedTable({ rows }: Props) {
                 {row.eventCount} event{row.eventCount === 1 ? '' : 's'} · {row.percentage.toFixed(1)}%
               </Text>
             </View>
-            <Text style={styles.loss}>{formatMoney(row.totalLoss)}</Text>
+            <Text style={styles.loss}>{formatMoney(row.totalLoss, currency)}</Text>
           </View>
         ))
       )}

@@ -1,4 +1,5 @@
 import { WASTE_REASONS } from '@constants/waste';
+import { formatMoney } from '@utils/financial';
 import type { WasteFilters, WasteLog, WasteSummary } from '@/types';
 
 /** Server-authoritative formula (FR-028). Client may preview only. */
@@ -54,6 +55,9 @@ export function summarizeWasteLogs(logs: WasteLog[]): WasteSummary {
   };
 }
 
-export function formatCostLoss(value: number): string {
-  return `$${value.toFixed(2)}`;
+export function formatCostLoss(
+  value: number,
+  currency: import('@/types').RestaurantCurrency | string = 'USD',
+): string {
+  return formatMoney(value, currency);
 }

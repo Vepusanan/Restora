@@ -7,6 +7,7 @@ import { InlineError } from '@components/ui/InlineError';
 import { SelectField } from '@components/ui/SelectField';
 import { useAuth } from '@hooks/useAuth';
 import { useInventory } from '@hooks/useInventory';
+import { useRestaurantSettings } from '@hooks/useRestaurantSettings';
 import { consumptionService } from '@services/consumption.service';
 import { USAGE_CATEGORY_OPTIONS } from '@constants/consumption';
 import { colors, spacing } from '@constants/theme';
@@ -30,6 +31,7 @@ export function LogUsageForm({ basePath }: Props) {
   const router = useRouter();
   const params = useLocalSearchParams<{ batchId?: string; ingredientKey?: string }>();
   const { user, profile, isAdmin } = useAuth();
+  const { currency } = useRestaurantSettings(profile?.restaurantId);
   const { batches, loading: inventoryLoading } = useInventory(profile?.restaurantId);
 
   const ingredients = useMemo(() => {
@@ -163,7 +165,7 @@ export function LogUsageForm({ basePath }: Props) {
       Alert.alert(
         'Usage logged',
         isAdmin
-          ? `Recorded ${parsed.data.quantityUsed} ${selectedUnit} · Cost ${formatConsumptionCost(result.consumptionCost)}${result.allocations.length > 1 ? `\nFIFO: ${allocSummary}` : ''}`
+          ? `Recorded ${parsed.data.quantityUsed} ${selectedUnit} · Cost ${formatConsumptionCost(result.consumptionCost, currency)}${result.allocations.length > 1 ? `\nFIFO: ${allocSummary}` : ''}`
           : `Recorded ${parsed.data.quantityUsed} ${selectedUnit} as ${parsed.data.category}.`,
       );
 
@@ -323,7 +325,7 @@ export function LogUsageForm({ basePath }: Props) {
               </Text>
             ))}
             {isAdmin && previewCost > 0 ? (
-              <Text style={styles.cost}>{formatConsumptionCost(previewCost)}</Text>
+              <Text style={styles.cost}>{formatConsumptionCost(previewCost, currency)}</Text>
             ) : null}
           </View>
         ) : null}
